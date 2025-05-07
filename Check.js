@@ -1,45 +1,39 @@
-
-// 代码
-// 测试用例
-// 测试结果
-// 测试结果
-// 1295. 统计位数为偶数的数字
+// 1128. 等价多米诺骨牌对的数量
 // 简单
 // 相关标签
 // 相关企业
 // 提示
-// 给你一个整数数组 nums，请你返回其中包含 偶数 个数位的数字的个数。
+// 给你一组多米诺骨牌 dominoes 。
 
- 
+// 形式上，dominoes[i] = [a, b] 与 dominoes[j] = [c, d] 等价 当且仅当 (a == c 且 b == d) 或者 (a == d 且 b == c) 。即一张骨牌可以通过旋转 0 度或 180 度得到另一张多米诺骨牌。
+
+// 在 0 <= i < j < dominoes.length 的前提下，找出满足 dominoes[i] 和 dominoes[j] 等价的骨牌对 (i, j) 的数量。
 
 // 示例 1：
 
-// 输入：nums = [12,345,2,6,7896]
-// 输出：2
-// 解释：
-// 12 是 2 位数字（位数为偶数） 
-// 345 是 3 位数字（位数为奇数）  
-// 2 是 1 位数字（位数为奇数） 
-// 6 是 1 位数字 位数为奇数） 
-// 7896 是 4 位数字（位数为偶数）  
-// 因此只有 12 和 7896 是位数为偶数的数字
+// 输入：dominoes = [[1,2],[2,1],[3,4],[5,6]]
+// 输出：1
 // 示例 2：
 
-// 输入：nums = [555,901,482,1771]
-// 输出：1 
-// 解释： 
-// 只有 1771 是位数为偶数的数字。
- 
+// 输入：dominoes = [[1,2],[1,2],[1,1],[1,2],[2,2]]
+// 输出：3
+
+// 提示：
+
+// 1 <= dominoes.length <= 4 * 104
+// dominoes[i].length == 2
+// 1 <= dominoes[i][j] <= 9
 /**
- * @param {number[]} nums
+ * @param {number[][]} dominoes
  * @return {number}
  */
-var findNumbers = function(nums) {
-    let res = 0;
-    for(let i = 0; i < nums.length; i++) {
-        if (String(nums[i]).length % 2 === 0) {
-            res++;
-        }
-    }
-    return res;
-};
+var numEquivDominoPairs = function (dominoes) {
+  let nums = new Array(100).fill(0)
+  let ans = 0
+  for (let i = 0; i < dominoes.length; i++) {
+    let count = dominoes[i][0] > dominoes[i][1] ? dominoes[i][0] * 10 + dominoes[i][1] : dominoes[i][1] * 10 + dominoes[i][0]
+    ans += nums[count]
+    nums[count]++
+  }
+  return ans
+}
