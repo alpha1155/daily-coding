@@ -1,39 +1,68 @@
-// 1128. 等价多米诺骨牌对的数量
+// 2094. 找出 3 位偶数
 // 简单
 // 相关标签
 // 相关企业
 // 提示
-// 给你一组多米诺骨牌 dominoes 。
+// 给你一个整数数组 digits ，其中每个元素是一个数字（0 - 9）。数组中可能存在重复元素。
 
-// 形式上，dominoes[i] = [a, b] 与 dominoes[j] = [c, d] 等价 当且仅当 (a == c 且 b == d) 或者 (a == d 且 b == c) 。即一张骨牌可以通过旋转 0 度或 180 度得到另一张多米诺骨牌。
+// 你需要找出 所有 满足下述条件且 互不相同 的整数：
 
-// 在 0 <= i < j < dominoes.length 的前提下，找出满足 dominoes[i] 和 dominoes[j] 等价的骨牌对 (i, j) 的数量。
+// 该整数由 digits 中的三个元素按 任意 顺序 依次连接 组成。
+// 该整数不含 前导零
+// 该整数是一个 偶数
+// 例如，给定的 digits 是 [1, 2, 3] ，整数 132 和 312 满足上面列出的全部条件。
+
+// 将找出的所有互不相同的整数按 递增顺序 排列，并以数组形式返回。
 
 // 示例 1：
 
-// 输入：dominoes = [[1,2],[2,1],[3,4],[5,6]]
-// 输出：1
+// 输入：digits = [2,1,3,0]
+// 输出：[102,120,130,132,210,230,302,310,312,320]
+// 解释：
+// 所有满足题目条件的整数都在输出数组中列出。 
+// 注意，答案数组中不含有 奇数 或带 前导零 的整数。
 // 示例 2：
 
-// 输入：dominoes = [[1,2],[1,2],[1,1],[1,2],[2,2]]
-// 输出：3
+// 输入：digits = [2,2,8,8,2]
+// 输出：[222,228,282,288,822,828,882]
+// 解释：
+// 同样的数字（0 - 9）在构造整数时可以重复多次，重复次数最多与其在 digits 中出现的次数一样。 
+// 在这个例子中，数字 8 在构造 288、828 和 882 时都重复了两次。 
+// 示例 3：
+
+// 输入：digits = [3,7,5]
+// 输出：[]
+// 解释：
+// 使用给定的 digits 无法构造偶数。
 
 // 提示：
 
-// 1 <= dominoes.length <= 4 * 104
-// dominoes[i].length == 2
-// 1 <= dominoes[i][j] <= 9
+// 3 <= digits.length <= 100
+// 0 <= digits[i] <= 9
 /**
- * @param {number[][]} dominoes
+ * @param {number[]} arr
+ * @return {boolean}
+ */
+/**
+ * @param {number[]} nums1
+ * @param {number[]} nums2
  * @return {number}
  */
-var numEquivDominoPairs = function (dominoes) {
-  let nums = new Array(100).fill(0)
+var minSum = function (nums1, nums2) {
   let ans = 0
-  for (let i = 0; i < dominoes.length; i++) {
-    let count = dominoes[i][0] > dominoes[i][1] ? dominoes[i][0] * 10 + dominoes[i][1] : dominoes[i][1] * 10 + dominoes[i][0]
-    ans += nums[count]
-    nums[count]++
+  let nums1Sum = 0, nums2Sum = 0,count1 = 0, count2 = 0
+  for (let i = 0; i < nums1.length; i++) {
+    nums1Sum += nums1[i]
+    if (nums1[i] === 0)count1++    
   }
-  return ans
+    for (let i = 0; i < nums2.length; i++) {
+    nums2Sum += nums2[i]
+    if (nums2[i] === 0)count2++    
+  }
+  if( (nums1Sum < nums2Sum+count2&&count1 === 0) || (nums1Sum+count1 > nums2Sum&&count2 === 0)){
+    return -1
+  }else{
+    return Math.max(nums1Sum+count1, nums2Sum+count2)
+  }
 }
+console.log(threeConsecutiveOdds([2, 1, 3, 0]))

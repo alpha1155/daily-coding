@@ -3,7 +3,9 @@
 // 相关标签
 // 相关企业
 // 提示
-// 给你 n 个任务和 m 个工人。每个任务需要一定的力量值才能完成，需要的力量值保存在下标从 0 开始的整数数组 tasks 中，第 i 个任务需要 tasks[i] 的力量才能完成。每个工人的力量值保存在下标从 0 开始的整数数组 workers 中，第 j 个工人的力量值为 workers[j] 。每个工人只能完成 一个 任务，且力量值需要 大于等于 该任务的力量要求值（即 workers[j] >= tasks[i] ）。
+// 给你 n 个任务和 m 个工人。每个任务需要一定的力量值才能完成，需要的力量值保存在下标从 0 开始的整数数组 tasks 中，第 i 个任务需要 tasks[i]
+// 的力量才能完成。每个工人的力量值保存在下标从 0 开始的整数数组 workers 中，第 j 个工人的力量值为 workers[j] 。每个工人只能完成 一个 任务，且力量值需要 大于等于
+// 该任务的力量要求值（即 workers[j] >= tasks[i] ）。
 
 // 除此以外，你还有 pills 个神奇药丸，可以给 一个工人的力量值 增加 strength 。你可以决定给哪些工人使用药丸，但每个工人 最多 只能使用 一片 药丸。
 
@@ -55,14 +57,42 @@
 // 0 <= pills <= m
 // 0 <= tasks[i], workers[j], strength <= 109
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Main {
 
     public static void main(String[] args) {
         Main main = new Main();
-        int[] result = main.buildArray(new int[] { 5, 0, 1, 2, 3, 4 });
+        int[] result = main.findEvenNumbers(new int[] {2, 1, 3, 0});
         System.out.println(Arrays.toString(result));
+    }
+
+    public long minSum(int[] nums1, int[] nums2) {
+        int len1 = nums1.length;
+        int len2 = nums2.length;
+        long nums1Sum = 0, nums2Sum = 0;
+        int count1 = 0, count2 = 0;
+        for (int i = 0; i < len1; i++) {
+            nums1Sum += nums1[i];
+            if (nums1[i] == 0) {
+                count1++;
+                nums1Sum++;
+            }
+        }
+        for (int i = 0; i < len2; i++) {
+            nums2Sum += nums2[i];
+            if (nums2[i] == 0) {
+                count2++;
+                nums2Sum++;
+            }
+        }
+        if ((count1 == 0 && nums1Sum < nums2Sum) || (count2 == 0 && nums2Sum < nums1Sum)) {
+            return -1;
+        }
+        return Math.max(nums1Sum, nums2Sum);
+
     }
 
     // 2071. 你可以安排的最多任务数目
@@ -73,6 +103,15 @@ public class Main {
             ans[i] = nums[nums[i]];
         }
         return ans;
+    }
+
+    public boolean threeConsecutiveOdds(int[] arr) {
+        for (int i = 0; i < arr.length - 2; i++) {
+            if (arr[i] % 2 == 1 && arr[i + 1] % 2 == 1 && arr[i + 2] % 2 == 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public int numEquivDominoPairs(int[][] dominoes) {
@@ -90,4 +129,41 @@ public class Main {
         }
         return ans;
     }
+
+    public int[] findEvenNumbers(int[] digits) {
+        int[] count = new int[1000]; // 统计每个三位数的出现次数
+        int len = digits.length;
+        
+        // 生成所有可能的三位数排列
+        for (int i = 0; i < len; i++) {
+            for (int j = 0; j < len; j++) {
+                if (i == j) continue; // 不能重复使用同一位置的数字
+                for (int k = 0; k < len; k++) {
+                    if (i == k || j == k) continue; // 不能重复使用同一位置的数字
+                    
+                    int hundreds = digits[i];
+                    int tens = digits[j];
+                    int ones = digits[k];
+                    
+                    // 确保百位不为0，且个位为偶数
+                    if (hundreds != 0 && ones % 2 == 0) {
+                        int num = hundreds * 100 + tens * 10 + ones;
+                        count[num]++; // 统计合法三位数的频率
+                    }
+                }
+            }
+        }
+        
+        // 收集结果并排序
+        List<Integer> result = new ArrayList<>();
+        for (int i = 100; i < 1000; i += 2) { // 直接遍历偶数
+            if (count[i] > 0) {
+                result.add(i);
+            }
+        }
+        
+        // 转换为int数组并返回
+        return result.stream(). ().mapToInt(Integer::intValue).toArray();
+    }
+
 }
