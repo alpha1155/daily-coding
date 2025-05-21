@@ -1,48 +1,59 @@
-// 3024. 三角形类型
-// 简单
+// 3355. 零数组变换 I
+// 中等
 // 相关标签
 // 相关企业
 // 提示
-// 给你一个下标从 0 开始长度为 3 的整数数组 nums ，需要用它们来构造三角形。
+// 给定一个长度为 n 的整数数组 nums 和一个二维数组 queries，其中 queries[i] = [li, ri]。
 
-// 如果一个三角形的所有边长度相等，那么这个三角形称为 equilateral 。
-// 如果一个三角形恰好有两条边长度相等，那么这个三角形称为 isosceles 。
-// 如果一个三角形三条边的长度互不相同，那么这个三角形称为 scalene 。
-// 如果这个数组无法构成一个三角形，请你返回字符串 "none" ，否则返回一个字符串表示这个三角形的类型。
+// 对于每个查询 queries[i]：
+
+// 在 nums 的下标范围 [li, ri] 内选择一个下标 子集。
+// 将选中的每个下标对应的元素值减 1。
+// 零数组 是指所有元素都等于 0 的数组。
+
+// 如果在按顺序处理所有查询后，可以将 nums 转换为 零数组 ，则返回 true，否则返回 false。
+
+ 
 
 // 示例 1：
 
-// 输入：nums = [3,3,3]
-// 输出："equilateral"
-// 解释：由于三条边长度相等，所以可以构成一个等边三角形，返回 "equilateral" 。
+// 输入： nums = [1,0,1], queries = [[0,2]]
+
+// 输出： true
+
+// 解释：
+
+// 对于 i = 0：
+// 选择下标子集 [0, 2] 并将这些下标处的值减 1。
+// 数组将变为 [0, 0, 0]，这是一个零数组。
 // 示例 2：
 
-// 输入：nums = [3,4,5]
-// 输出："scalene"
+// 输入： nums = [4,3,2,1], queries = [[1,3],[0,2]]
+
+// 输出： false
+
 // 解释：
-// nums[0] + nums[1] = 3 + 4 = 7 ，大于 nums[2] = 5 。
-// nums[0] + nums[2] = 3 + 5 = 8 ，大于 nums[1] = 4 。
-// nums[1] + nums[2] = 4 + 5 = 9 ，大于 nums[0] = 3 。
-// 由于任意两边之和都大于第三边，所以可以构成一个三角形，因为三条边的长度互不相等，所以返回 "scalene"。
+
+// 对于 i = 0： 
+// 选择下标子集 [1, 2, 3] 并将这些下标处的值减 1。
+// 数组将变为 [4, 2, 1, 0]。
+// 对于 i = 1：
+// 选择下标子集 [0, 1, 2] 并将这些下标处的值减 1。
+// 数组将变为 [3, 1, 0, 0]，这不是一个零数组。
+ 
+
 // 提示：
 
-// nums.length == 3
-// 1 <= nums[i] <= 100
-/**
+// 1 <= nums.length <= 105
+// 0 <= nums[i] <= 105
+// 1 <= queries.length <= 105
+// queries[i].length == 2
+// 0 <= li <= ri < nums.length/**
  * @param {number[]} nums
- * @return {string}
+ * @param {number[][]} queries
+ * @return {boolean}
  */
-var triangleType = function (nums) {
-  if (nums[0] + nums[1] <= nums[2] || nums[0] + nums[2] <= nums[1] || nums[1] + nums[2] <= nums[0]) {
-    return 'none'
-  }else {
-    if (nums[0] === nums[1] && nums[1] === nums[2]) {
-      return 'equilateral'
-    }else if (nums[0] === nums[1] || nums[1] === nums[2] || nums[0] === nums[2]) {
-      return 'isosceles'
-    }else {
-      return 'scalene'
-    }
-  }
-}
+var isZeroArray = function(nums, queries) {
+    
+};
 console.log(triangleType([3, 4, 5]))
