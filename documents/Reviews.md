@@ -1,3 +1,5 @@
+https://maochunguang.github.io/java-interview/interview_topn/toutiao.html#%E6%8A%80%E6%9C%AF%E7%82%B9%E6%B1%87%E6%80%BB
+
 ## 1.进程和线程的区别？使用线程这能节约时间吗？
 
 1. **进程是操作系统进行资源分配和保护的独立单元，而线程是程序执行和调度的基本单元，是进程内的一条执行路径。**
@@ -154,11 +156,24 @@ List 只能用 Integer，不能用 int，是因为 Java 泛型只接受引用类
 ## 13、线程有几种实现方式？有什么状态？
 
 ```java
-// 1. 继承 Thread  Thread → new MyThread().start()
-new Thread(() -> System.out.println("Hi")).start();
+// 1. 继承 Thread  
+Thread → new MyThread().start()
 
 // 2. 实现 Runnable
-new Thread(() -> System.out.println("Hi")).start();
+public class Demo2 {
+    public static void main(String[] args) {
+        Thread t = new Thread(new MyRunnable());
+        t.start();
+        System.out.println("main 线程");
+    }
+}
+
+class MyRunnable implements Runnable {
+    @Override
+    public void run() {
+        System.out.println("方式2：实现 Runnable");
+    }
+}
 
 // 3. 带返回值 Callable
 FutureTask<String> task = new FutureTask<>(() -> "OK");
@@ -167,6 +182,17 @@ System.out.println(task.get());
 
 // 4. 线程池（推荐！）
 Executors.newCachedThreadPool().execute(() -> System.out.println("Hi"));
+
+//5.Lambda 简化
+// Runnable
+new Thread(() -> System.out.println("Lambda Runnable")).start();
+
+// Callable
+FutureTask<String> task = new FutureTask<>(
+    () -> "Lambda Callable 返回值"
+);
+new Thread(task).start();
+System.out.println(task.get());
 ```
 
 
@@ -195,5 +221,26 @@ TERMINATED
 
 > “finalize 是 Object 的方法，GC 前可能调用一次，用于资源清理。 但不确定、性能差、已废弃，实际开发一律不用！ 用 try-with-resources 或 Cleaner 替代。”
 
-![image-20251106190317764](.\picture\java thread status.png)
+![image-20251106190317764](assets/java thread status-1762429072319-1.png)
 
+
+
+## 15、说说抽象类和接口的区别。
+
+
+
+
+
+## 16、synchonized和lock的区别？synchonized优化
+
+## 17、为什么线程多的时候要使用锁而不是CAS？
+
+## 18、谈一下异常，erorr和exception的区别，讲一下受检异常和非受检异常，说一下RuntimeException都有哪些，非受检异常有哪些？如何处理异常
+
+## 19、什么是阻塞和非阻塞，什么是同步，异步？
+
+## 20、什么是反射？反射的用途？为什么java需要反射，c++不需要。
+
+## 21、有哪些方式可以创建一个对象？
+
+## 22、多线程和协程的优缺点
