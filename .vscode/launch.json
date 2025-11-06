@@ -1,7 +1,34 @@
 {
   "version": "0.2.0",
   "configurations": [
-    
+    {
+      "type": "java",
+      "name": "NioClient",
+      "request": "launch",
+      "mainClass": "Spring.NioClient",
+      "projectName": "daily-coding_9c4ffaa7"
+    },
+    {
+      "type": "java",
+      "name": "NIO",
+      "request": "launch",
+      "mainClass": "Spring.NIO",
+      "projectName": "daily-coding_9c4ffaa7"
+    },
+    {
+      "type": "java",
+      "name": "BIO",
+      "request": "launch",
+      "mainClass": "Spring.BIO",
+      "projectName": "daily-coding_9c4ffaa7"
+    },
+    {
+      "type": "java",
+      "name": "MyCallable",
+      "request": "launch",
+      "mainClass": "Spring.MyCallable",
+      "projectName": "daily-coding_9c4ffaa7"
+    },
     {
       "name": "Python: Run main.py",
       "type": "debugpy",
