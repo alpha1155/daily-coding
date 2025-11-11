@@ -227,20 +227,112 @@ TERMINATED
 
 ## 15、说说抽象类和接口的区别。
 
+- 抽象类可含普通属性/方法/构造器
+- 接口（JDK8 前）只能含 public abstract 方法和 public static final 常量；
+  - 普通方法
+    - Java 8 前：不能有实现
+    -  Java 8+：支持 default 方法（有实现）
+    -  Java 9+：支持 private 方法
+- 一个类只能继承一个抽象类，但可实现多个接口。
+- 抽象类偏向“父子继承 + 代码共享”，接口偏向“行为契约 + 多实现”。
+-  优先使用接口实现解耦，必要时用抽象类共享代码。
 
+| 特性       | 抽象类              | 接口                             |
+| ---------- | ------------------- | -------------------------------- |
+| 继承       | `extends`（单继承） | `implements`（多实现）           |
+| 方法实现   | 可有完整实现        | 默认无实现（Java 8+ 可 default） |
+| 成员变量   | 可有实例变量        | 只能 public static final         |
+| 构造器     | 有                  | 无                               |
+| 访问修饰符 | 灵活                | 方法默认 public                  |
+| 设计意图   | is-a 关系，代码复用 | can-do 能力，行为规范            |
 
 
 
 ## 16、synchonized和lock的区别？synchonized优化
 
+> synchronized 是 JVM 内置锁，自动释放，基于 monitorenter/monitorexit；Lock 是显式锁（ReentrantLock），需手动 unlock，支持公平锁、条件等待、tryLock 和中断。
+
+
+
 ## 17、为什么线程多的时候要使用锁而不是CAS？
+
+> 线程多时 CAS 竞争激烈，自旋重试耗 CPU + 缓存失效风暴，导致吞吐量雪崩；锁通过线程挂起（Park）让出 CPU，结合锁升级优化，整体性能更稳定。
 
 ## 18、谈一下异常，erorr和exception的区别，讲一下受检异常和非受检异常，说一下RuntimeException都有哪些，非受检异常有哪些？如何处理异常
 
+- Error 是 JVM 级严重错误（如 OOM、StackOverflow），不可恢复不应捕获；Exception 是程序级异常，可处理，其中 RuntimeException 为非受检异常，其余为受检异常。
+
+- 受检异常（Checked）继承自 Exception 但非 RuntimeException，编译强制处理；非受检（Unchecked）是 RuntimeException 及其子类，运行时抛出，编译不强制。
+
+- 常见 RuntimeException：NullPointerException、ArrayIndexOutOfBoundsException、ClassCastException、IllegalArgumentException、UnsupportedOperationException 等；所有 RuntimeException 及其子类 + Error 均为非受检异常。
+
+  - | 异常                              | 触发场景      | 生产防御                            |
+    | --------------------------------- | ------------- | ----------------------------------- |
+    | `NullPointerException`            | 空对象调用    | `Objects.requireNonNull` / Optional |
+    | `IndexOutOfBoundsException`       | 数组/列表越界 | `list.get(i)` 前 `checkIndex`       |
+    | `ClassCastException`              | 类型转换失败  | `instanceof` 判断                   |
+    | `IllegalArgumentException`        | 参数非法      | 入参校验                            |
+    | `IllegalStateException`           | 状态非法      | 状态机保护                          |
+    | `UnsupportedOperationException`   | 接口未实现    | `Collections.unmodifiableList()`    |
+    | `ConcurrentModificationException` | 迭代中修改    | 用 `CopyOnWriteArrayList`           |
+    | `ArithmeticException`             | `/0`          | 除零检查                            |
+
+- 受检异常
+
+  - | 异常类                      | 包                  | 常见场景                          |
+    | --------------------------- | ------------------- | --------------------------------- |
+    | `IOException`               | `java.io`           | 文件读写、网络 IO                 |
+    | `FileNotFoundException`     | `java.io`           | 文件未找到                        |
+    | `EOFException`              | `java.io`           | 文件结束异常                      |
+    | `SQLException`              | `java.sql`          | 数据库操作异常                    |
+    | `ClassNotFoundException`    | `java.lang`         | `Class.forName()` 找不到类        |
+    | `InterruptedException`      | `java.lang`         | `Thread.sleep()`, `wait()` 被打断 |
+    | `ParseException`            | `java.text`         | 日期/数字解析失败                 |
+    | `MalformedURLException`     | `java.net`          | URL 格式错误                      |
+    | `NoSuchMethodException`     | `java.lang.reflect` | 反射找不到方法                    |
+    | `InvocationTargetException` | `java.lang.reflect` | 反射调用目标异常                  |
+
+
+
+
+
 ## 19、什么是阻塞和非阻塞，什么是同步，异步？
+
+> **阻塞/非阻塞** 关注**线程等待状态**：阻塞 → 调用后线程挂起；非阻塞 → 立即返回，需轮询。 
+>
+> **同步/异步** 关注**结果获取方式**：同步 → 调用者主动等结果；异步 → 回调/未来通知结果。
+
+| 维度     | 阻塞（Blocking）          | 非阻塞（Non-blocking）            |
+| -------- | ------------------------- | --------------------------------- |
+| 系统调用 | read() 直到数据到位才返回 | read() 立即返回 EAGAIN            |
+| 线程状态 | WAITING / BLOCKED（Park） | RUNNABLE（轮询或事件驱动）        |
+| 典型 API | InputStream.read()        | SocketChannel.read() + O_NONBLOCK |
+
+| 维度     | 同步（Synchronous） | 异步（Asynchronous）         |
+| -------- | ------------------- | ---------------------------- |
+| 结果获取 | 调用者**主动等待**  | 系统**回调通知**             |
+| 典型实现 | Future.get() 阻塞等 | CompletableFuture + Callback |
+| 内核支持 | 无需                | 需要 io_uring / AIO          |
+
+
 
 ## 20、什么是反射？反射的用途？为什么java需要反射，c++不需要。
 
+> 反射是 运行时动态获取类结构（如字段、方法、构造器）并操作其对象的能力；用途包括 框架自动注入（Spring）、序列化（Jackson）、动态代理（AOP）、插件系统。
+>
+> Java 是 **解释 + 动态加载**，类在运行时才确定，反射是框架动态操作的基石；C++ 是 **静态编译**，模板在编译期展开，依赖注入/序列化靠模板元编程，无需运行时反射。
+
 ## 21、有哪些方式可以创建一个对象？
 
+Java 创建对象有 **5 种主流方式**：
+
+1. new 关键字
+2. Class.forName().newInstance() / 反射
+3. Constructor.newInstance()
+4. clone()
+5. 反序列化（ObjectInputStream.readObject()） 附加：new 变种（数组、String 常量池）、工厂/Builder、动态代理、虚拟线程（JDK21）。
+
 ## 22、多线程和协程的优缺点
+
+> 多线程：内核级，抢占式调度，适合 CPU 密集型，真并行，但上下文切换贵（1-10μs）、内存大（1MB 栈）。 协程：用户态，轻量协作式，适合 I/O 密集型，单线程高并发（10w+），切换快（<1μs）、栈小（几KB），但不能利用多核。
+
