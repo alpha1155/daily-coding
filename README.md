@@ -1,36 +1,131 @@
-```html
-<head>
-  <meta charset="utf-8">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.28.2/tocbot.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.28.2/tocbot.min.js"></script>
-  <style>
-    .toc {position:fixed;right:20px;top:80px;width:240px;background:#fff;padding:15px;border-left:4px solid #0066ff;box-shadow:0 0 12px rgba(0,0,0,.1);max-height:80vh;overflow-y:auto;font-size:14.5px;z-index:999;}
-    @media (max-width:900px){.toc{display:none;}}
-  </style>
-</head>
+- [目录](#目录)
+  - [1.进程和线程的区别？使用线程这能节约时间吗？](#1进程和线程的区别使用线程这能节约时间吗)
+  - [2.分析一下线程池的参数？线程池工作流程？四种预定义的线程池？各自的workqueue size是多少？](#2分析一下线程池的参数线程池工作流程四种预定义的线程池各自的workqueue-size是多少)
+  - [8、怎么理解面向对象？简单聊聊封装、多态、继承](#8怎么理解面向对象简单聊聊封装多态继承)
+  - [9、Integer和Int的区别？什么时候用Integer？new Integer(1)会不会从缓存中取？](#9integer和int的区别什么时候用integernew-integer1会不会从缓存中取)
+  - [10、List为什么只能用Integer 不能用int的原因是什么？](#10list为什么只能用integer-不能用int的原因是什么)
+  - [11、介绍下NIO，NIO中channel的作用？](#11介绍下nionio中channel的作用)
+  - [12、什么是乐观锁、悲观锁？区别是什么呢？原理呢？](#12什么是乐观锁悲观锁区别是什么呢原理呢)
+  - [13、线程有几种实现方式？有什么状态？](#13线程有几种实现方式有什么状态)
+  - [14、finalize方法](#14finalize方法)
+  - [15、说说抽象类和接口的区别。](#15说说抽象类和接口的区别)
+  - [16、synchonized和lock的区别？synchonized优化](#16synchonized和lock的区别synchonized优化)
+  - [17、为什么线程多的时候要使用锁而不是CAS？](#17为什么线程多的时候要使用锁而不是cas)
+  - [18、谈一下异常，erorr和exception的区别，讲一下受检异常和非受检异常，说一下RuntimeException都有哪些，非受检异常有哪些？如何处理异常](#18谈一下异常erorr和exception的区别讲一下受检异常和非受检异常说一下runtimeexception都有哪些非受检异常有哪些如何处理异常)
+  - [19、什么是阻塞和非阻塞，什么是同步，异步？](#19什么是阻塞和非阻塞什么是同步异步)
+  - [20、什么是反射？反射的用途？为什么java需要反射，c++不需要。](#20什么是反射反射的用途为什么java需要反射c不需要)
+  - [21、有哪些方式可以创建一个对象？](#21有哪些方式可以创建一个对象)
+  - [22、多线程和协程的优缺点](#22多线程和协程的优缺点)
+  - [23、基础类和继承类](#23基础类和继承类)
+  - [24、ArrayList VS LinkedList](#24arraylist-vs-linkedlist)
+  - [25、讲讲类的实例化顺序](#25讲讲类的实例化顺序)
+  - [26、JAVA有顺序的map](#26java有顺序的map)
+  - [27、继承和聚合](#27继承和聚合)
+  - [28、描述动态代理的几种实现方式，分别说出相应的优缺点](#28描述动态代理的几种实现方式分别说出相应的优缺点)
+    - [JDK动态代理和CGLIB的区别](#jdk动态代理和cglib的区别)
+  - [29、为什么 CGLIB 不能代理“纯接口”？](#29为什么-cglib-不能代理纯接口)
+  - [30、Final的用途](#30final的用途)
+  - [31、给出三种单例模式](#31给出三种单例模式)
+    - [1. 饿汉式（最简单，最常用，99% 公司都在用）](#1-饿汉式最简单最常用99-公司都在用)
+    - [2. 静态内部类（完美平衡，面试最爱写）](#2-静态内部类完美平衡面试最爱写)
+    - [3. 枚举单例（Effective Java 作者推荐，最强防破解版）](#3-枚举单例effective-java-作者推荐最强防破解版)
+    - [补充：双重检查锁（DCL）](#补充双重检查锁dcl)
+    - [终极结论（面试直接说）：](#终极结论面试直接说)
+    - [为什么必须加 volatile？（99% 的人都说不清）](#为什么必须加-volatile99-的人都说不清)
+  - [32、能不能只在父类写一次 hashCode() 和 equals()](#32能不能只在父类写一次-hashcode-和-equals)
+    - [方案一、使用objects.hash() + instanceof基类](#方案一使用objectshash--instanceof基类)
+    - [方案二、Lombok](#方案二lombok)
+    - [方案三、Apache Commons Lang](#方案三apache-commons-lang)
+  - [33、设计模式](#33设计模式)
+    - [Java 23 种经典设计模式（GoF）+ 常考现代模式（2025 面试终极版）](#java-23-种经典设计模式gof-常考现代模式2025-面试终极版)
+    - [现代/常见扩展模式（大厂高频）](#现代常见扩展模式大厂高频)
+    - [面试经典回答模板（背完直接上）](#面试经典回答模板背完直接上)
+    - [一句话总结（面试金句）](#一句话总结面试金句)
+  - [34、深拷贝VS浅拷贝](#34深拷贝vs浅拷贝)
+  - [35、在自己的代码中，如果创建一个java.lang.String类，这个类是否可以被类加载器加载？为什么。](#35在自己的代码中如果创建一个javalangstring类这个类是否可以被类加载器加载为什么)
+  - [36、说一说你对java.lang.Object对象中hashCode和equals方法的理解。在什么场景下需要重新实现这两个方法。](#36说一说你对javalangobject对象中hashcode和equals方法的理解在什么场景下需要重新实现这两个方法)
+    - [1\>默认实现到底长什么样？](#1默认实现到底长什么样)
+    - [2\>什么时候必须重写这两个方法？](#2什么时候必须重写这两个方法)
+    - [3\>正确重写](#3正确重写)
+  - [37、实体类的equals和hashCode方法是否可以完全交给Lombok的@Data注解实现？需要注意什么地方？](#37实体类的equals和hashcode方法是否可以完全交给lombok的data注解实现需要注意什么地方)
+  - [38、那为什么 JPA 实体建议不要用 Lombok 的 @EqualsAndHashCode？](#38那为什么-jpa-实体建议不要用-lombok-的-equalsandhashcode)
+  - [39、在jdk1.5中，引入了泛型，泛型的存在是用来解决什么问题。](#39在jdk15中引入了泛型泛型的存在是用来解决什么问题)
+  - [40、这样的a.hashcode() 有什么用，与a.equals(b)有什么关系。](#40这样的ahashcode-有什么用与aequalsb有什么关系)
+  - [41、有没有可能2个不相等的对象有相同的hashcode。](#41有没有可能2个不相等的对象有相同的hashcode)
+  - [42、Java中的HashSet内部是如何工作的。](#42java中的hashset内部是如何工作的)
+  - [43、java8的新特性。](#43java8的新特性)
+  - [44、什么是序列化，怎么序列化，为什么序列化，反序列化会遇到什么问题，如何解决。](#44什么是序列化怎么序列化为什么序列化反序列化会遇到什么问题如何解决)
+    - [终极结论（面试/架构师必背 3 句话）](#终极结论面试架构师必背-3-句话)
+- [JVM](#jvm)
+  - [1.谈谈多态，多态的底层原理](#1谈谈多态多态的底层原理)
+  - [2.CAS的底层原理，synchonized的底层原理](#2cas的底层原理synchonized的底层原理)
+      - [**CAS（Compare And Swap）**](#cascompare-and-swap)
+      - [**synchronized 底层原理**](#synchronized-底层原理)
+  - [3.volatile的原理？](#3volatile的原理)
+- [Spring](#spring)
+  - [1.Spring 的核心模块有哪些？IOC 和 AOP 的原理？](#1spring-的核心模块有哪些ioc-和-aop-的原理)
+  - [2.spring的事务传播是怎么样的，哪些方式？](#2spring的事务传播是怎么样的哪些方式)
+  - [3.spring是如何解决循环依赖的?](#3spring是如何解决循环依赖的)
+  - [4.@Autowired 字段注入 vs 构造器注入，循环依赖影响？](#4autowired-字段注入-vs-构造器注入循环依赖影响)
+  - [5.ApplicationContext.getBean() 触发循环依赖吗？](#5applicationcontextgetbean-触发循环依赖吗)
+- [网络](#网络)
+  - [1. 浏览器对网页有缓存吗？缓存是如何存放的？](#1-浏览器对网页有缓存吗缓存是如何存放的)
+  - [2.Cookie和session的联系与区别，cookie、session、分布式session](#2cookie和session的联系与区别cookiesession分布式session)
+  - [3.如何保证TCP可靠传输](#3如何保证tcp可靠传输)
+  - [4.什么是 SSO？什么是 JWT？SSO、JWT 和 Redis 登录的过程](#4什么是-sso什么是-jwtssojwt-和-redis-登录的过程)
+- [Redis](#redis)
+  - [1.Redis单线程为什么性能高?](#1redis单线程为什么性能高)
+  - [2.Redis 为什么可以保证线程安全？](#2redis-为什么可以保证线程安全)
+  - [3.Redis的七大数据类型和底层数据结构？](#3redis的七大数据类型和底层数据结构)
+- [RabbitMQ](#rabbitmq)
+  - [1.RabbitMQ 的用途与结构](#1rabbitmq-的用途与结构)
+  - [2.RabbitMQ 可靠性传输](#2rabbitmq-可靠性传输)
+  - [3.rabbitmq exchange类型 有哪些类型](#3rabbitmq-exchange类型-有哪些类型)
+- [分布式和微服务](#分布式和微服务)
+  - [1.什么是分布式事务？分布式事务的解决方案？](#1什么是分布式事务分布式事务的解决方案)
+  - [2,分布式锁如何实现？RedLock算法](#2分布式锁如何实现redlock算法)
+    - [1\>**Redis 分布式锁**（最常用）](#1redis-分布式锁最常用)
+    - [2\>**Zookeeper 分布式锁**（强一致性）](#2zookeeper-分布式锁强一致性)
+    - [3\>**数据库分布式锁**（简单）](#3数据库分布式锁简单)
+    - [1. **什么是 RedLock？**](#1-什么是-redlock)
+    - [2.Redisson 框架](#2redisson-框架)
+    - [4：Redis 分布式锁为什么用 SETNX + EXPIRE 不安全？](#4redis-分布式锁为什么用-setnx--expire-不安全)
+    - [5：Redisson 怎么防止锁过期？](#5redisson-怎么防止锁过期)
+    - [6：Zookeeper 比 Redis 强在哪？](#6zookeeper-比-redis-强在哪)
+    - [7：RedLock 算法的核心步骤？](#7redlock-算法的核心步骤)
+    - [8：Redisson 是什么？它如何支持分布式锁？](#8redisson-是什么它如何支持分布式锁)
+    - [9：RedLock 的潜在问题？](#9redlock-的潜在问题)
+- [数据库](#数据库)
+  - [1.什么时候考虑分库分表？](#1什么时候考虑分库分表)
+  - [2.mysql为什么要用b+树，不用平衡二叉树做索引结构？B树和B+树有什么区别？](#2mysql为什么要用b树不用平衡二叉树做索引结构b树和b树有什么区别)
+  - [3.创建数据库索引应该怎么考虑？](#3创建数据库索引应该怎么考虑)
+      - [**执行流程对比：**](#执行流程对比)
+  - [4.使用int 做primary key和使用string 有什么优劣？](#4使用int-做primary-key和使用string-有什么优劣)
+  - [5.数据库分表的方法？](#5数据库分表的方法)
+  - [6.如果一条SQL语句执行的很慢，怎么优化？](#6如果一条sql语句执行的很慢怎么优化)
+  - [7.Mysql为什么没有使用hash索引？](#7mysql为什么没有使用hash索引)
+  - [8.索引的匹配原则知道吗？](#8索引的匹配原则知道吗)
+  - [9.MySQL事务隔离级别？](#9mysql事务隔离级别)
+  - [10.Mysql的查询执行流程？更新执行流程？](#10mysql的查询执行流程更新执行流程)
+  - [11.Mysql有哪些存储引擎？什么区别？](#11mysql有哪些存储引擎什么区别)
+  - [12.数据库的表结构设计遵循哪些规则？](#12数据库的表结构设计遵循哪些规则)
+  - [13.UUID 与 Snowflake 对比？](#13uuid-与-snowflake-对比)
+    - [UUID 主键](#uuid-主键)
+    - [Snowflake](#snowflake)
+  - [二、UUID 做主键的 5 大硬伤](#二uuid-做主键的-5-大硬伤)
+  - [14.EXPLAIN 关键字段 type Extra代表什么](#14explain-关键字段-type-extra代表什么)
+    - [type 字段：**访问类型排名（从优到劣）**](#type-字段访问类型排名从优到劣)
+    - [Extra 字段：**额外操作（红灯预警）**](#extra-字段额外操作红灯预警)
+- [架构和设计模式](#架构和设计模式)
+  - [1.rpc框架如何实现？](#1rpc框架如何实现)
+  - [2.服务提供方有节点挂了怎么办？](#2服务提供方有节点挂了怎么办)
+  - [3.服务调用方怎么知道服务不可用了？](#3服务调用方怎么知道服务不可用了)
+  - [4.怎么实现的类似本地调用？](#4怎么实现的类似本地调用)
+- [算法](#算法)
+  - [1.遍历](#1遍历)
+  - [2.最小生成树](#2最小生成树)
 
-<div class="toc">
-  <strong>目录</strong>
-  <div id="toc"></div>
-</div>
-
-<script>
-tocbot.init({
-  tocSelector: '#toc',
-  contentSelector: '#write',        // Typora 预览时正文就是 #write
-  headingSelector: 'h1, h2, h3, h4',
-  collapseDepth: 6,
-  scrollSmooth: true,
-  headingsOffset: 80
-});
-</script>
-```
-
-
-
-https://maochunguang.github.io/java-interview/interview_topn/toutiao.html#%E6%8A%80%E6%9C%AF%E7%82%B9%E6%B1%87%E6%80%BB
-
-# 目录
+# [目录](https://maochunguang.github.io/java-interview/interview_topn/toutiao.html#%E6%8A%80%E6%9C%AF%E7%82%B9%E6%B1%87%E6%80%BB)
 
 [TOC]
 
@@ -74,12 +169,12 @@ https://maochunguang.github.io/java-interview/interview_topn/toutiao.html#%E6%8A
 
 3. 四种预定义线程池的区别和workqueue的大小
 
-   1. | 类型                                | workqueue size                         | 使用场景                                                     |
-      | ----------------------------------- | -------------------------------------- | ------------------------------------------------------------ |
-      | FixedThreadPool——固定大小线程池     | LinkdBlockingQueue——Integer.MAX_VALUE  | 线程数固定                                                   |
-      | CacheThreadPool——可缓存线程池       | SynchronousQueue                       | **容量 0**，不存储任务 <br />**生产者-消费者直接交换**，put() 必须等 take() <br />**动态线程**：无空闲线程就创建，最多 Integer.MAX_VALUE<br /> **60s 回收空闲线程**<br />**优点**：响应快，适合短任务 <br />**风险**：任务突刺 → 线程爆炸 → OOM |
-      | SingleThreadExecutor——单线程线程池  | LinkedBlockingQueue——Integer.MAX_VALUE | 所有任务顺序执行，有任务无线堆积的风险                       |
-      | ScheduledThreadPool——定时任务线程池 | DelayedWorkQueue——无界                 | 用于执行定时或周期性任务。                                   |
+   | 1.                                  | 类型                                   | workqueue size                                                                                                                                                                                                                                  | 使用场景 |
+   | ----------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | FixedThreadPool——固定大小线程池     | LinkdBlockingQueue——Integer.MAX_VALUE  | 线程数固定                                                                                                                                                                                                                                      |
+   | CacheThreadPool——可缓存线程池       | SynchronousQueue                       | **容量 0**，不存储任务 <br />**生产者-消费者直接交换**，put() 必须等 take() <br />**动态线程**：无空闲线程就创建，最多 Integer.MAX_VALUE<br /> **60s 回收空闲线程**<br />**优点**：响应快，适合短任务 <br />**风险**：任务突刺 → 线程爆炸 → OOM |
+   | SingleThreadExecutor——单线程线程池  | LinkedBlockingQueue——Integer.MAX_VALUE | 所有任务顺序执行，有任务无线堆积的风险                                                                                                                                                                                                          |
+   | ScheduledThreadPool——定时任务线程池 | DelayedWorkQueue——无界                 | 用于执行定时或周期性任务。                                                                                                                                                                                                                      |
 
    
 
@@ -89,13 +184,13 @@ https://maochunguang.github.io/java-interview/interview_topn/toutiao.html#%E6%8A
 
 ## 4、synchonized和lock的区别？synchonized优化
 
-1. | 特性       | synchronized                                            | lock                                                         |
-   | ---------- | ------------------------------------------------------- | ------------------------------------------------------------ |
-   | 定义       | JAVA关键字，JVM层面，自动加锁、释放锁                   | 接口，调用lock(),  unlock()                                  |
-   | 灵活       | 不灵活                                                  | **非常灵活**。可以跨方法加锁和解锁；<br />可以尝试非阻塞地获取锁（`tryLock`）；可以响应中断。 |
-   | 等待可中断 | 不可                                                    | 可以，调用lockInterruptibly()                                |
-   | 公平锁     | 仅非公平锁                                              | both，公平锁- new ReentrantLock(true)                        |
-   | 条件队列   | 单一，通过wait(), notify(), notifyAll()操作一个等待队列 | 多个，通过 `newCondition()`可以创建多个条件变量（`Condition`对象） |
+| 1.         | 特性                                                    | synchronized                                                                                  | lock |
+| ---------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 定义       | JAVA关键字，JVM层面，自动加锁、释放锁                   | 接口，调用lock(),  unlock()                                                                   |
+| 灵活       | 不灵活                                                  | **非常灵活**。可以跨方法加锁和解锁；<br />可以尝试非阻塞地获取锁（`tryLock`）；可以响应中断。 |
+| 等待可中断 | 不可                                                    | 可以，调用lockInterruptibly()                                                                 |
+| 公平锁     | 仅非公平锁                                              | both，公平锁- new ReentrantLock(true)                                                         |
+| 条件队列   | 单一，通过wait(), notify(), notifyAll()操作一个等待队列 | 多个，通过 `newCondition()`可以创建多个条件变量（`Condition`对象）                            |
 
 2. 无锁 → 偏向锁 → 轻量级锁 → 重量级锁，JVM 自动优化，减少系统调用。
 
@@ -178,13 +273,13 @@ public static <T> T max(T a, T b) {
 
 2. new Integer(1) 每次创建新对象，Integer.valueOf(1) 会命中缓存。
 
-3. | 追问                                            | 回答要点                                          |
-   | ----------------------------------------------- | ------------------------------------------------- |
-   | `Integer a = 1; Integer b = 1;` 为什么 `a==b`？ | 自动装箱调用 `valueOf()`，命中缓存                |
-   | `new Integer(1) == 1` 呢？                      | 拆箱后 `int` 比较，`true`                         |
-   | 缓存范围能改吗？                                | 可以：`-XX:AutoBoxCacheMax=1000`                  |
-   | 为什么缓存 `-128~127`？                         | 覆盖 byte 范围，日常使用频繁                      |
-   | `Integer` 是线程安全的吗？                      | 不可变（`final` + `private final int`），线程安全 |
+| 3.                                              | 追问                                              | 回答要点 |
+| ----------------------------------------------- | ------------------------------------------------- |
+| `Integer a = 1; Integer b = 1;` 为什么 `a==b`？ | 自动装箱调用 `valueOf()`，命中缓存                |
+| `new Integer(1) == 1` 呢？                      | 拆箱后 `int` 比较，`true`                         |
+| 缓存范围能改吗？                                | 可以：`-XX:AutoBoxCacheMax=1000`                  |
+| 为什么缓存 `-128~127`？                         | 覆盖 byte 范围，日常使用频繁                      |
+| `Integer` 是线程安全的吗？                      | 不可变（`final` + `private final int`），线程安全 |
 
 
 
@@ -332,31 +427,31 @@ TERMINATED
 
 - 常见 RuntimeException：NullPointerException、ArrayIndexOutOfBoundsException、ClassCastException、IllegalArgumentException、UnsupportedOperationException 等；所有 RuntimeException 及其子类 + Error 均为非受检异常。
 
-  - | 异常                              | 触发场景      | 生产防御                            |
-    | --------------------------------- | ------------- | ----------------------------------- |
-    | `NullPointerException`            | 空对象调用    | `Objects.requireNonNull` / Optional |
-    | `IndexOutOfBoundsException`       | 数组/列表越界 | `list.get(i)` 前 `checkIndex`       |
-    | `ClassCastException`              | 类型转换失败  | `instanceof` 判断                   |
-    | `IllegalArgumentException`        | 参数非法      | 入参校验                            |
-    | `IllegalStateException`           | 状态非法      | 状态机保护                          |
-    | `UnsupportedOperationException`   | 接口未实现    | `Collections.unmodifiableList()`    |
-    | `ConcurrentModificationException` | 迭代中修改    | 用 `CopyOnWriteArrayList`           |
-    | `ArithmeticException`             | `/0`          | 除零检查                            |
+  | -                                 | 异常          | 触发场景                            | 生产防御 |
+  | --------------------------------- | ------------- | ----------------------------------- |
+  | `NullPointerException`            | 空对象调用    | `Objects.requireNonNull` / Optional |
+  | `IndexOutOfBoundsException`       | 数组/列表越界 | `list.get(i)` 前 `checkIndex`       |
+  | `ClassCastException`              | 类型转换失败  | `instanceof` 判断                   |
+  | `IllegalArgumentException`        | 参数非法      | 入参校验                            |
+  | `IllegalStateException`           | 状态非法      | 状态机保护                          |
+  | `UnsupportedOperationException`   | 接口未实现    | `Collections.unmodifiableList()`    |
+  | `ConcurrentModificationException` | 迭代中修改    | 用 `CopyOnWriteArrayList`           |
+  | `ArithmeticException`             | `/0`          | 除零检查                            |
 
 - 受检异常
 
-  - | 异常类                      | 包                  | 常见场景                          |
-    | --------------------------- | ------------------- | --------------------------------- |
-    | `IOException`               | `java.io`           | 文件读写、网络 IO                 |
-    | `FileNotFoundException`     | `java.io`           | 文件未找到                        |
-    | `EOFException`              | `java.io`           | 文件结束异常                      |
-    | `SQLException`              | `java.sql`          | 数据库操作异常                    |
-    | `ClassNotFoundException`    | `java.lang`         | `Class.forName()` 找不到类        |
-    | `InterruptedException`      | `java.lang`         | `Thread.sleep()`, `wait()` 被打断 |
-    | `ParseException`            | `java.text`         | 日期/数字解析失败                 |
-    | `MalformedURLException`     | `java.net`          | URL 格式错误                      |
-    | `NoSuchMethodException`     | `java.lang.reflect` | 反射找不到方法                    |
-    | `InvocationTargetException` | `java.lang.reflect` | 反射调用目标异常                  |
+  | -                           | 异常类              | 包                                | 常见场景 |
+  | --------------------------- | ------------------- | --------------------------------- |
+  | `IOException`               | `java.io`           | 文件读写、网络 IO                 |
+  | `FileNotFoundException`     | `java.io`           | 文件未找到                        |
+  | `EOFException`              | `java.io`           | 文件结束异常                      |
+  | `SQLException`              | `java.sql`          | 数据库操作异常                    |
+  | `ClassNotFoundException`    | `java.lang`         | `Class.forName()` 找不到类        |
+  | `InterruptedException`      | `java.lang`         | `Thread.sleep()`, `wait()` 被打断 |
+  | `ParseException`            | `java.text`         | 日期/数字解析失败                 |
+  | `MalformedURLException`     | `java.net`          | URL 格式错误                      |
+  | `NoSuchMethodException`     | `java.lang.reflect` | 反射找不到方法                    |
+  | `InvocationTargetException` | `java.lang.reflect` | 反射调用目标异常                  |
 
 
 
@@ -388,10 +483,10 @@ TERMINATED
 >
 > Java 是 **解释 + 动态加载**，类在运行时才确定，反射是框架动态操作的基石；C++ 是 **静态编译**，模板在编译期展开，依赖注入/序列化靠模板元编程，无需运行时反射。
 
-| 方式                                                       | 代码                                                         | 说明                                          | 适用场景                           |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------- | ---------------------------------- |
-| **1. Class.forName + newInstance()**（最经典）             | `User user = (User) Class.forName("com.User").newInstance();` | 需要**无参构造器**，JDK9 已废弃 newInstance() | 老项目、框架（如 Spring 早期）     |
-| **2. Class 对象 + getConstructor().newInstance()**（推荐） | `Constructor<User> c = User.class.getConstructor();` `User user = c.newInstance();` | 可指定任意构造器，传参，支持私有构造          | Spring、MyBatis 等现代框架主流方式 |
+| 方式                                                       | 代码                                                                                         | 说明                                          | 适用场景                           |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------- |
+| **1. Class.forName + newInstance()**（最经典）             | `User user = (User) Class.forName("com.User").newInstance();`                                | 需要**无参构造器**，JDK9 已废弃 newInstance() | 老项目、框架（如 Spring 早期）     |
+| **2. Class 对象 + getConstructor().newInstance()**（推荐） | `Constructor<User> c = User.class.getConstructor();` `User user = c.newInstance();`          | 可指定任意构造器，传参，支持私有构造          | Spring、MyBatis 等现代框架主流方式 |
 | **3. 直接 Constructor.newInstance()**（最常用）            | `User user = User.class.getConstructor(String.class, int.class)` `.newInstance("张三", 18);` | 功能最全，支持私有构造 + 带参                 | 所有需要反射创建对象的场景         |
 
 如果我们动态获取到这些信息，我们需要依靠 Class 对象。Class 类对象将一个类的方法、变量等信息告诉运行的程序。Java 提供了四种方式获取 Class 对象:
@@ -425,23 +520,23 @@ ClassLoader.getSystemClassLoader().loadClass("cn.javaguide.TargetObject");
 
 通过类加载器获取 Class 对象不会进行初始化，意味着不进行包括初始化等一系列步骤，静态代码块和静态对象不会得到执行
 
-| 序号 | 获取方式                                    | 代码示例                                                     | 说明&特点                                                    |
-| ---- | ------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| 1    | **类名.class**（最常用、最推荐）            | `Class<User> clazz = User.class;`                            | 编译期就确定，**类型安全**，不会抛异常                       |
-| 2    | **对象.getClass()**（运行时才有对象时用）   | `User user = new User();` `Class<? extends User> clazz = user.getClass();` | 继承自 Object，返回运行时真实类型                            |
-| 3    | **Class.forName("全限定类名")**（动态加载） | `Class<?> clazz = Class.forName("com.example.User");`        | 常用于配置文件、插件系统，会触发**静态块初始化**，可能抛 `ClassNotFoundException` |
-| 4    | **类加载器加载**（高级用法）                | `Class<?> clazz = ClassLoader.getSystemClassLoader().loadClass("com.example.User");` | **不会触发类初始化**（静态块不执行），常用于热加载、自定义类加载器 |
+| 序号 | 获取方式                                    | 代码示例                                                                             | 说明&特点                                                                         |
+| ---- | ------------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| 1    | **类名.class**（最常用、最推荐）            | `Class<User> clazz = User.class;`                                                    | 编译期就确定，**类型安全**，不会抛异常                                            |
+| 2    | **对象.getClass()**（运行时才有对象时用）   | `User user = new User();` `Class<? extends User> clazz = user.getClass();`           | 继承自 Object，返回运行时真实类型                                                 |
+| 3    | **Class.forName("全限定类名")**（动态加载） | `Class<?> clazz = Class.forName("com.example.User");`                                | 常用于配置文件、插件系统，会触发**静态块初始化**，可能抛 `ClassNotFoundException` |
+| 4    | **类加载器加载**（高级用法）                | `Class<?> clazz = ClassLoader.getSystemClassLoader().loadClass("com.example.User");` | **不会触发类初始化**（静态块不执行），常用于热加载、自定义类加载器                |
 
-| 问题                                                    | 答案                                                         |
-| ------------------------------------------------------- | ------------------------------------------------------------ |
+| 问题                                                    | 答案                                                                              |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | `Class.forName()` 和 `ClassLoader.loadClass()` 的区别？ | `forName()` 会**执行静态代码块**（类初始化） `loadClass()` 只加载类，**不初始化** |
-| 哪种方式最安全？                                        | `User.class`（编译期确定）                                   |
-| Spring/MyBatis 里常用哪种？                             | `Class.forName()`（读取配置动态加载驱动、Mapper 等）         |
-| 基本数据类型也能获取 Class 吗？                         | 可以！`int.class`、`Integer.TYPE`                            |
+| 哪种方式最安全？                                        | `User.class`（编译期确定）                                                        |
+| Spring/MyBatis 里常用哪种？                             | `Class.forName()`（读取配置动态加载驱动、Mapper 等）                              |
+| 基本数据类型也能获取 Class 吗？                         | 可以！`int.class`、`Integer.TYPE`                                                 |
 
-| 题目                   | 答案数量 | 具体方式                                                     |
-| ---------------------- | -------- | ------------------------------------------------------------ |
-| 获取 Class 对象的方式  | **4 种** | `.class`、`.getClass()`、`Class.forName()`、`ClassLoader.loadClass()` |
+| 题目                   | 答案数量 | 具体方式                                                                                             |
+| ---------------------- | -------- | ---------------------------------------------------------------------------------------------------- |
+| 获取 Class 对象的方式  | **4 种** | `.class`、`.getClass()`、`Class.forName()`、`ClassLoader.loadClass()`                                |
 | 反射创建对象实例的方式 | **3 种** | `Class.forName().newInstance()`、`class.getConstructor().newInstance()`、`Constructor.newInstance()` |
 
 ## 21、有哪些方式可以创建一个对象？
@@ -500,13 +595,13 @@ p.name = "Tom"; // 直接操作字段
 
 ## 23、基础类和继承类
 
-| 题目                      | 答案                                                         |
-| ------------------------- | ------------------------------------------------------------ |
+| 题目                      | 答案                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------ |
 | **8种基本类型**           | `byte(1), short(2), int(4), long(8), float(4), double(8), char(2), boolean(1)` |
-| **String 可继承？**       | **不可，final 类**                                           |
-| **String 拼接用哪个？**   | **单线程：StringBuilder，多线程：StringBuffer**              |
-| **List 读多用哪个？**     | **ArrayList**                                                |
-| **List 头尾操作用哪个？** | **LinkedList**                                               |
+| **String 可继承？**       | **不可，final 类**                                                             |
+| **String 拼接用哪个？**   | **单线程：StringBuilder，多线程：StringBuffer**                                |
+| **List 读多用哪个？**     | **ArrayList**                                                                  |
+| **List 头尾操作用哪个？** | **LinkedList**                                                                 |
 
 | 特性         | `String`             | `StringBuffer`         | `StringBuilder`    |
 | ------------ | -------------------- | ---------------------- | ------------------ |
@@ -560,24 +655,24 @@ Java 中真正“有顺序”的 Map 只有 LinkedHashMap（插入顺序）和 T
 - 继承是“生死与共”的亲父子关系，聚合是“可换可离”的合作关系
 - 能用聚合（组合）解决的，坚决不用继承！
 
-| 面试官问题                       | 标准回答（直接背）                                           |
-| -------------------------------- | ------------------------------------------------------------ |
-| 为什么说“优先使用组合而非继承”？ | 继承破坏封装性、增加耦合、父类改动会影响所有子类；组合更灵活、符合开闭原则 |
-| 继承有什么风险？                 | 白箱复用、父类变化影响子类、容易造成类爆炸（继承层级太深）   |
-| 聚合和组合的区别？（进阶）       | 聚合（弱）：部分可以脱离整体存在 组合（强）：部分和整体生命周期一致 |
+| 面试官问题                       | 标准回答（直接背）                                                                        |
+| -------------------------------- | ----------------------------------------------------------------------------------------- |
+| 为什么说“优先使用组合而非继承”？ | 继承破坏封装性、增加耦合、父类改动会影响所有子类；组合更灵活、符合开闭原则                |
+| 继承有什么风险？                 | 白箱复用、父类变化影响子类、容易造成类爆炸（继承层级太深）                                |
+| 聚合和组合的区别？（进阶）       | 聚合（弱）：部分可以脱离整体存在 组合（强）：部分和整体生命周期一致                       |
 | 什么时候必须用继承？             | 1. 明确 is-a 关系 2. 需要多态（父类引用指向子类对象） 3. 需要复用父类代码且无法用组合实现 |
 
 ## 28、描述动态代理的几种实现方式，分别说出相应的优缺点
 
 > **日常开发/Spring 项目：有接口用 JDK，无接口用 CGLIB 就够了**
 
-| 实现方式                 | 所属技术          | 能否代理类（无接口） | 性能排序 | 线程安全 | 优点                                                         | 缺点                                                         |
-| ------------------------ | ----------------- | -------------------- | -------- | -------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| **1. JDK 动态代理**      | java.lang.reflect | ❌ 只能代理接口       | ★★★☆☆    | 是       | 1. JDK 原生，无额外依赖 2. 实现简单，稳定 3. 所有框架都支持  | 1. **必须实现接口** 2. 反射调用，性能稍慢 3. 不能代理 final 类 |
-| **2. CGLIB**             | ASM 字节码框架    | √ 可以代理普通类     | ★★★★☆    | 是       | 1. **不需要接口**，直接生成子类 2. 性能比 JDK 代理高 3. Spring 默认选择 | 1. 不能代理 final 类和 final 方法 2. 依赖第三方 jar 3. 老版本有内存泄漏风险（已修复） |
-| **3. ByteBuddy**         | ByteBuddy         | √ 可以代理类/接口    | ★★★★★    | 是       | 1. **性能最高**（接近直接调用） 2. API 优雅，功能强大 3. 支持 Java 17+ 模块化 4. Netflix、Dubbo 3 等大厂使用 | 1. 学习成本稍高 2. 依赖第三方 jar                            |
-| **4. Javassist**         | Javassist         | √ 可以代理类/接口    | ★★★★☆    | 是       | 1. API 简单，容易上手 2. 生成字节码可读性好 3. Hibernate、Quartz 使用 | 1. 性能略低于 ByteBuddy 2. 依赖第三方 jar                    |
-| **5. ASM**（底层黑魔法） | ASM               | √                    | ★★★★★    | 是       | 1. **性能最强**（直接操作字节码） 2. 体积最小 3. CGLIB、ByteBuddy 底层都用它 | 1. 学习曲线极陡 2. 手写字节码极易出错 3. **基本没人手写**    |
+| 实现方式                 | 所属技术          | 能否代理类（无接口） | 性能排序 | 线程安全 | 优点                                                                                                         | 缺点                                                                                  |
+| ------------------------ | ----------------- | -------------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| **1. JDK 动态代理**      | java.lang.reflect | ❌ 只能代理接口       | ★★★☆☆    | 是       | 1. JDK 原生，无额外依赖 2. 实现简单，稳定 3. 所有框架都支持                                                  | 1. **必须实现接口** 2. 反射调用，性能稍慢 3. 不能代理 final 类                        |
+| **2. CGLIB**             | ASM 字节码框架    | √ 可以代理普通类     | ★★★★☆    | 是       | 1. **不需要接口**，直接生成子类 2. 性能比 JDK 代理高 3. Spring 默认选择                                      | 1. 不能代理 final 类和 final 方法 2. 依赖第三方 jar 3. 老版本有内存泄漏风险（已修复） |
+| **3. ByteBuddy**         | ByteBuddy         | √ 可以代理类/接口    | ★★★★★    | 是       | 1. **性能最高**（接近直接调用） 2. API 优雅，功能强大 3. 支持 Java 17+ 模块化 4. Netflix、Dubbo 3 等大厂使用 | 1. 学习成本稍高 2. 依赖第三方 jar                                                     |
+| **4. Javassist**         | Javassist         | √ 可以代理类/接口    | ★★★★☆    | 是       | 1. API 简单，容易上手 2. 生成字节码可读性好 3. Hibernate、Quartz 使用                                        | 1. 性能略低于 ByteBuddy 2. 依赖第三方 jar                                             |
+| **5. ASM**（底层黑魔法） | ASM               | √                    | ★★★★★    | 是       | 1. **性能最强**（直接操作字节码） 2. 体积最小 3. CGLIB、ByteBuddy 底层都用它                                 | 1. 学习曲线极陡 2. 手写字节码极易出错 3. **基本没人手写**                             |
 
 ### JDK动态代理和CGLIB的区别
 
@@ -619,19 +714,19 @@ CGLIB 是通过“继承实现类”来完成代理的，所以它天然不能�
 | **2. 修饰方法** | `public final void save() {}`               | **子类不能重写**   | 防止子类误改核心逻辑（如模板方法中的关键步骤）     |
 | **3. 修饰类**   | `public final class String {}`              | **不能被继承**     | 保证设计不变、线程安全、性能优化（如字符串常量池） |
 
-| 位置           | 具体效果                                                     | 经典使用场景（大厂都这么写）                                 |
-| -------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| **final 变量** | 基本类型：值不可变 引用类型：引用地址不可变（对象内容仍可变） | `private final UserRepository userRepository;`（Spring 依赖注入） `public static final long SERIAL_VERSION_UID = 1L;` |
-| **final 方法** | 不能被 override，但可以被重载                                | `Object.getClass()`、`Thread.isInterrupted()` 防止子类破坏逻辑 |
-| **final 类**   | 不能有子类，典型代表：`String`、`Integer`、`Long`、`Double` 等包装类 | 不可变类设计，保证线程安全 + 允许 JVM 做常量池优化           |
+| 位置           | 具体效果                                                             | 经典使用场景（大厂都这么写）                                                                                          |
+| -------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **final 变量** | 基本类型：值不可变 引用类型：引用地址不可变（对象内容仍可变）        | `private final UserRepository userRepository;`（Spring 依赖注入） `public static final long SERIAL_VERSION_UID = 1L;` |
+| **final 方法** | 不能被 override，但可以被重载                                        | `Object.getClass()`、`Thread.isInterrupted()` 防止子类破坏逻辑                                                        |
+| **final 类**   | 不能有子类，典型代表：`String`、`Integer`、`Long`、`Double` 等包装类 | 不可变类设计，保证线程安全 + 允许 JVM 做常量池优化                                                                    |
 
-| 问题                            | 标准答案（金句）                                             |
-| ------------------------------- | ------------------------------------------------------------ |
+| 问题                            | 标准答案（金句）                                                                           |
+| ------------------------------- | ------------------------------------------------------------------------------------------ |
 | final 变量真的完全不可变吗？    | 基本类型完全不可变，引用类型只能保证“引用不变”，对象内容仍可变（所以要配合不可变对象设计） |
-| final 和 immutable 的区别？     | final 是语言层面的“不可再赋值”，immutable 是设计层面的“所有状态都不可变”（如 String） |
-| final 方法可以被重载吗？        | 可以重载，但不能被重写                                       |
-| final 有什么性能好处？          | JVM 可以内联 final 方法和常量，提升运行速度（尤其是 static final） |
-| Spring 中为什么这么爱用 final？ | 让 bean 的依赖在构造器注入后不可变，更符合函数式编程和线程安全理念 |
+| final 和 immutable 的区别？     | final 是语言层面的“不可再赋值”，immutable 是设计层面的“所有状态都不可变”（如 String）      |
+| final 方法可以被重载吗？        | 可以重载，但不能被重写                                                                     |
+| final 有什么性能好处？          | JVM 可以内联 final 方法和常量，提升运行速度（尤其是 static final）                         |
+| Spring 中为什么这么爱用 final？ | 让 bean 的依赖在构造器注入后不可变，更符合函数式编程和线程安全理念                         |
 
 ## 31、给出三种单例模式
 
@@ -966,10 +1061,10 @@ Person p8 = DeepCopy.utils.deepCopyByGson(p1);
 
 “equals 相等 → hashCode 必须相等”，这是 Java 哈希容器（HashMap、HashSet、HashTable）能正常工作的基石。
 
-| 方法       | 官方规定（必须背下来）                                       | 违反会怎样？                                 |
-| ---------- | ------------------------------------------------------------ | -------------------------------------------- |
+| 方法       | 官方规定（必须背下来）                                                                                                                                                                   | 违反会怎样？                                 |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | equals()   | 1. 自反性：x.equals(x) → true 2. 对称性：x.equals(y) → y.equals(x) 也必须 true 3. 传递性：x.equals(y) && y.equals(z) → x.equals(z) 4. 一致性：多次调用结果一致 5. x.equals(null) → false | 违反对称性/传递性 → HashMap/HashSet 行为异常 |
-| hashCode() | 1. 多次调用返回相同值（只要对象没被修改） 2. **如果 a.equals(b) → a.hashCode() 必须等于 b.hashCode()** 3. 不相等时 hashCode 可以相同（但最好不同，提升哈希表性能） | 违反第2条 → 放进 HashMap 后找不到对象！      |
+| hashCode() | 1. 多次调用返回相同值（只要对象没被修改） 2. **如果 a.equals(b) → a.hashCode() 必须等于 b.hashCode()** 3. 不相等时 hashCode 可以相同（但最好不同，提升哈希表性能）                       | 违反第2条 → 放进 HashMap 后找不到对象！      |
 
 ### 1>默认实现到底长什么样？
 
@@ -987,13 +1082,13 @@ public native int hashCode();   // native 方法，返回对象在内存中的�
 
 ### 2>什么时候必须重写这两个方法？
 
-| 场景                                        | 为什么必须重写？                                             | 典型例子                |
-| ------------------------------------------- | ------------------------------------------------------------ | ----------------------- |
+| 场景                                        | 为什么必须重写？                                                  | 典型例子                |
+| ------------------------------------------- | ----------------------------------------------------------------- | ----------------------- |
 | 1. 对象要放进 HashMap/HashSet 做 key 或元素 | 业务上认为“内容相同就是同一个对象”，但默认是按地址判断 → 找不到！ | 实体类（User、Order）   |
-| 2. 业务语义相等（logical equality）         | 比如两个 User(id=1, name="张三") 认为是同一个                | 所有实体类              |
-| 3. 用作缓存的 key                           | 缓存 key 必须内容相等就能命中                                | Redis 缓存、Guava Cache |
-| 4. 集合去重（list → set）                   | 想根据业务字段去重而不是地址去重                             | List<User> 转 Set<User> |
-| 5. 框架要求（JPA/Hibernate 实体）           | @Entity 必须正确实现 equals/hashCode，否则多对一、一对多关系会乱 | JPA 实体类              |
+| 2. 业务语义相等（logical equality）         | 比如两个 User(id=1, name="张三") 认为是同一个                     | 所有实体类              |
+| 3. 用作缓存的 key                           | 缓存 key 必须内容相等就能命中                                     | Redis 缓存、Guava Cache |
+| 4. 集合去重（list → set）                   | 想根据业务字段去重而不是地址去重                                  | List<User> 转 Set<User> |
+| 5. 框架要求（JPA/Hibernate 实体）           | @Entity 必须正确实现 equals/hashCode，否则多对一、一对多关系会乱  | JPA 实体类              |
 
  “**只要对象会被放进 HashMap、HashSet、HashTable 做 key 或元素，或者需要业务含义相等，就必须同时重写 equals 和 hashCode**。”
 
@@ -1054,13 +1149,13 @@ Lombok实现`equals`和`hashCode`的方式是，它会为类中的每个非静�
 
 ## 38、那为什么 JPA 实体建议不要用 Lombok 的 @EqualsAndHashCode？
 
-| 序号 | 致命问题（踩中就死）                                     | 具体表现 / 事故案例                                          | 正确做法                                                   |
-| ---- | -------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------- |
+| 序号 | 致命问题（踩中就死）                                     | 具体表现 / 事故案例                                                                                                                                                                                                    | 正确做法                                                   |
+| ---- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
 | 1    | **懒加载代理对象导致 equals 永远不等**（最常见最致命！） | User 实体有关联的 orders（@OneToMany(fetch = LAZY)） 从数据库查出来的是 Hibernate 代理对象（User$$_jvst123_0） getClass() 变成代理类 → 两个 User 实例 getClass() 不同 → equals 永远返回 false → HashSet 重复、缓存失效 | 手动写 equals + getClass()，或者用业务主键（id）           |
-| 2    | **未持久化的实体（id 为 null）导致 equals 行为不一致**   | 新建一个 User u1 = new User("张三") u2 = new User("张三") id 都是 null → equals(true) → 放进 HashSet 变成一个 保存后 id 变成 1 和 2 → 突然 equals(false) → HashSet 里还是只有一个 → 找不到对象！ | 永远只用 id 判断相等，未保存的实体不要放集合               |
-| 3    | **集合中的实体被修改后从 Set 中“丢失”**（经典事故）      | Set<User> users = new HashSet<>() 把 u1 放进去 → hashCode = 123 修改 u1.setUsername("李四")（如果 username 参与了 hashCode）→ hashCode 变成 456 → HashSet 找不到 u1 了！ | 实体 equals/hashCode 只能基于不可变的业务主键（通常是 id） |
-| 4    | **双向关系导致 StackOverflowError**（循环引用）          | User 和 Department 双向关联 @EqualsAndHashCode → equals 调用 department.equals → 再调用 user.equals → 无限递归 → 栈溢出 | 手动写时排除对方字段，或用 @EqualsAndHashCode.Exclude      |
-| 5    | **违反 JPA 规范建议**（官方文档写死了）                  | JPA 规范明确建议：“实体 equals/hashCode 实现应该基于业务主键，不建议使用 Lombok 等自动生成工具” Hibernate 官方文档也专门写了警告 | 手动写，或者用 @NaturalId + 专用工具                       |
+| 2    | **未持久化的实体（id 为 null）导致 equals 行为不一致**   | 新建一个 User u1 = new User("张三") u2 = new User("张三") id 都是 null → equals(true) → 放进 HashSet 变成一个 保存后 id 变成 1 和 2 → 突然 equals(false) → HashSet 里还是只有一个 → 找不到对象！                       | 永远只用 id 判断相等，未保存的实体不要放集合               |
+| 3    | **集合中的实体被修改后从 Set 中“丢失”**（经典事故）      | Set<User> users = new HashSet<>() 把 u1 放进去 → hashCode = 123 修改 u1.setUsername("李四")（如果 username 参与了 hashCode）→ hashCode 变成 456 → HashSet 找不到 u1 了！                                               | 实体 equals/hashCode 只能基于不可变的业务主键（通常是 id） |
+| 4    | **双向关系导致 StackOverflowError**（循环引用）          | User 和 Department 双向关联 @EqualsAndHashCode → equals 调用 department.equals → 再调用 user.equals → 无限递归 → 栈溢出                                                                                                | 手动写时排除对方字段，或用 @EqualsAndHashCode.Exclude      |
+| 5    | **违反 JPA 规范建议**（官方文档写死了）                  | JPA 规范明确建议：“实体 equals/hashCode 实现应该基于业务主键，不建议使用 Lombok 等自动生成工具” Hibernate 官方文档也专门写了警告                                                                                       | 手动写，或者用 @NaturalId + 专用工具                       |
 
 “JPA 实体用 Lombok @EqualsAndHashCode = 线上事故制造机！ 
 
@@ -1117,32 +1212,32 @@ HashMap.put("hello", PRESENT)   ← 真正执行的是这一步
 | 9    | **Nashorn JavaScript 引擎** | 可在 Java 中直接运行 JS（Java 15 已移除）      | 少用，基本淘汰                                        |
 | 10   | **MetaSpace 取代 PermGen**  | 永久代改成元空间，用本地内存，不再 OOM         | JVM 调优不再调 -XX:MaxPermSize                        |
 
-| 问题                         | 标准回答（直接背）                                           |
-| ---------------------------- | ------------------------------------------------------------ |
-| 你最喜欢 Java 8 的哪个特性？ | **Stream + Lambda**，让代码量减少 50%+，可读性爆表           |
-| parallelStream 有没有坑？    | 有！线程不安全、数据量小反而更慢、有序性可能丢失             |
+| 问题                         | 标准回答（直接背）                                              |
+| ---------------------------- | --------------------------------------------------------------- |
+| 你最喜欢 Java 8 的哪个特性？ | **Stream + Lambda**，让代码量减少 50%+，可读性爆表              |
+| parallelStream 有没有坑？    | 有！线程不安全、数据量小反而更慢、有序性可能丢失                |
 | default 方法解决什么问题？   | 接口升级时兼容老实现（比如 java 8 给 Collection 加了 stream()） |
-| Optional 是万能的吗？        | 不是！不能替代所有 null 判断，滥用反而代码更丑               |
+| Optional 是万能的吗？        | 不是！不能替代所有 null 判断，滥用反而代码更丑                  |
 
 ## 44、什么是序列化，怎么序列化，为什么序列化，反序列化会遇到什么问题，如何解决。
 
-| 问题                                                 | 标准答案（直接背）                                           |
-| ---------------------------------------------------- | ------------------------------------------------------------ |
-| **什么是序列化？**                                   | 把 Java 对象转换成字节数组（byte[]）的过程。反过来，把字节数组恢复成 Java 对象叫反序列化。 |
-| **怎么序列化？**                                     | 1. 类实现 Serializable 接口（标记接口，无方法） 2. 用 ObjectOutputStream.writeObject(obj) 写出去 3. 用 ObjectInputStream.readObject() 读回来 |
-| **为什么需要序列化？**（5 大真实场景）               | 1. 对象网络传输（RPC、RMI、Socket） 2. 对象持久化到文件/数据库（缓存快照、日志） 3. 深拷贝（最彻底的深拷贝方式） 4. 分布式系统传递（Redis 缓存、Kafka 消息、Dubbo 参数） 5. Android Parcelable 底层也是序列化 |
+| 问题                                                 | 标准答案（直接背）                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **什么是序列化？**                                   | 把 Java 对象转换成字节数组（byte[]）的过程。反过来，把字节数组恢复成 Java 对象叫反序列化。                                                                                                                                                                                                                   |
+| **怎么序列化？**                                     | 1. 类实现 Serializable 接口（标记接口，无方法） 2. 用 ObjectOutputStream.writeObject(obj) 写出去 3. 用 ObjectInputStream.readObject() 读回来                                                                                                                                                                 |
+| **为什么需要序列化？**（5 大真实场景）               | 1. 对象网络传输（RPC、RMI、Socket） 2. 对象持久化到文件/数据库（缓存快照、日志） 3. 深拷贝（最彻底的深拷贝方式） 4. 分布式系统传递（Redis 缓存、Kafka 消息、Dubbo 参数） 5. Android Parcelable 底层也是序列化                                                                                                |
 | **反序列化会遇到什么问题？**（8 大坑，线上事故常客） | 1. serialVersionUID 不一致 → InvalidClassException 2. 类结构改变（删了字段、改了类型）→ 反序列化失败 3. transient 字段丢失（不参与序列化） 4. 静态字段不序列化 5. 父类没实现 Serializable → 父类字段全部丢失 6. 循环引用 → 正常（JVM 自动处理） 7. 反序列化时执行恶意代码（黑客攻击神器） 8. 单例/枚举被破坏 |
-| **如何解决这些问题？**（生产级最佳实践）             | 见下表（背完无敌）                                           |
+| **如何解决这些问题？**（生产级最佳实践）             | 见下表（背完无敌）                                                                                                                                                                                                                                                                                           |
 
-| 问题                     | 解决方案（必写）                                             | 代码示例 |
-| ------------------------ | ------------------------------------------------------------ | -------- |
-| serialVersionUID 不一致  | 显式声明 private static final long serialVersionUID = 1L;（推荐用 IDEA 自动生成） | 是       |
+| 问题                     | 解决方案（必写）                                                                           | 代码示例 |
+| ------------------------ | ------------------------------------------------------------------------------------------ | -------- |
+| serialVersionUID 不一致  | 显式声明 private static final long serialVersionUID = 1L;（推荐用 IDEA 自动生成）          | 是       |
 | 类结构变化               | 1. 永远不要删字段，只加新字段 2. 用 defaultReadObject + 手动兼容老字段 3. 推荐用 JSON 替代 | 是       |
-| transient 字段丢失       | 想序列化就别加 transient，想控制就自己写 writeObject/readObject | 是       |
-| 父类没实现 Serializable  | 父类也加上 Serializable，或子类自己手动序列化父类字段        | 是       |
-| 防止反序列化破坏单例     | 实现 readResolve() 方法返回单例实例                          | 是       |
-| 防止反序列化执行恶意代码 | 1. 不要反序列化不可信数据 2. 用 ObjectInputFilter（JDK 9+） 3. 生产推荐用 JSON/FastJSON | 是       |
-| 深拷贝最彻底方式         | 序列化 + 反序列化就是最彻底的深拷贝（连 final 字段都能拷贝） | 是       |
+| transient 字段丢失       | 想序列化就别加 transient，想控制就自己写 writeObject/readObject                            | 是       |
+| 父类没实现 Serializable  | 父类也加上 Serializable，或子类自己手动序列化父类字段                                      | 是       |
+| 防止反序列化破坏单例     | 实现 readResolve() 方法返回单例实例                                                        | 是       |
+| 防止反序列化执行恶意代码 | 1. 不要反序列化不可信数据 2. 用 ObjectInputFilter（JDK 9+） 3. 生产推荐用 JSON/FastJSON    | 是       |
+| 深拷贝最彻底方式         | 序列化 + 反序列化就是最彻底的深拷贝（连 final 字段都能拷贝）                               | 是       |
 
 ### 终极结论（面试/架构师必背 3 句话）
 
@@ -1249,12 +1344,12 @@ graph TD
     F --> G[目标方法执行]
 ```
 
-| 问题                             | 回答                                                         |
-| -------------------------------- | ------------------------------------------------------------ |
-| **AOP 是编译时还是运行时？**     | **运行时**（Spring 默认），可通过 AspectJ 编译时织入         |
+| 问题                             | 回答                                                           |
+| -------------------------------- | -------------------------------------------------------------- |
+| **AOP 是编译时还是运行时？**     | **运行时**（Spring 默认），可通过 AspectJ 编译时织入           |
 | **`@Transactional` 怎么生效？**  | `@EnableTransactionManagement` → 注册 `TransactionInterceptor` |
-| **CGLIB 怎么生成字节码？**       | `ASM` 库动态生成子类                                         |
-| **代理后 `instanceof` 还准吗？** | JDK 代理返回 `false`，CGLIB 返回 `true`                      |
+| **CGLIB 怎么生成字节码？**       | `ASM` 库动态生成子类                                           |
+| **代理后 `instanceof` 还准吗？** | JDK 代理返回 `false`，CGLIB 返回 `true`                        |
 
 | 注解              | 时机              | 用途                 |
 | ----------------- | ----------------- | -------------------- |
@@ -1655,12 +1750,12 @@ MySQL（InnoDB）用 **B+ 树** 做索引因为：
 
   - 必须从最左边字段开始用，跳过就失效
 
-  - | SQL                                            | 是否走索引 | 说明         |
-    | ---------------------------------------------- | ---------- | ------------ |
-    | WHERE user_id=100                              | 是         | 最左         |
-    | WHERE user_id=100 AND status=1                 | 是         | 连续         |
-    | WHERE status=1                                 | 否         | 跳过 user_id |
-    | WHERE user_id=100 AND create_time='2025-01-01' | 部分       | 只用 user_id |
+  | -                                              | SQL  | 是否走索引   | 说明 |
+  | ---------------------------------------------- | ---- | ------------ |
+  | WHERE user_id=100                              | 是   | 最左         |
+  | WHERE user_id=100 AND status=1                 | 是   | 连续         |
+  | WHERE status=1                                 | 否   | 跳过 user_id |
+  | WHERE user_id=100 AND create_time='2025-01-01' | 部分 | 只用 user_id |
 
 - **覆盖索引（Covering Index）**
 
