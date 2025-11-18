@@ -1,25 +1,16 @@
+---
+​---
+layout: default
+​---
+{% include toc.html %}
+---
+
 https://maochunguang.github.io/java-interview/interview_topn/toutiao.html#%E6%8A%80%E6%9C%AF%E7%82%B9%E6%B1%87%E6%80%BB
 
 # 目录
 
 ---
-```html
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.28.2/tocbot.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.28.2/tocbot.min.js"></script>
 
-<div style="position:fixed;right:20px;top:80px;width:220px;">
-  <b>目录</b>
-  <div id="toc"></div>
-</div>
-
-<script>
-tocbot.init({
-  tocSelector: '#toc',
-  contentSelector: '.markdown-body',
-  headingSelector: 'h2, h3, h4',
-});
-</script>
-```
 
 [TOC]
 
