@@ -2,7 +2,13 @@ https://maochunguang.github.io/java-interview/interview_topn/toutiao.html#%E6%8A
 
 # 目录
 
-<!-- TOC -->
+---
+```yaml
+---
+layout: default
+---
+{% include toc.html %}
+```
 
 [TOC]
 
