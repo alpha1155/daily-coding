@@ -1285,6 +1285,11 @@ HashMap.put("hello", PRESENT)   ← 真正执行的是这一步
 #### **CAS（Compare And Swap）**
 
 > **CAS 是无锁原子操作**，硬件指令级支持（cmpxchg），三要素：**内存值 V、预期值 A、新值 B** 流程：V == A ? V = B : 失败重试
+> ABA问题：一个值从A变成B，然后又变回A。CAS检查时发现值还是A，于是认为没有变化，操作成功。但这中间的变化过程可能是有问题的。
+> 解决方案：使用版本号（Stamp）。AtomicStampedReference就是通过维护一个版本号来解决ABA问题的。
+> 循环时间长开销大：如果竞争激烈，CAS长时间自旋不成功，会给CPU带来很大开销。
+> 只能保证一个共享变量的原子操作：不能保证多个变量同时操作的原子性。
+> 解决方案：使用AtomicReference来封装多个变量，或者使用锁。
 
 #### **synchronized 底层原理**
 
