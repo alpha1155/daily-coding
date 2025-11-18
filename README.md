@@ -1,16 +1,36 @@
----
-​---
-layout: default
-​---
-{% include toc.html %}
----
+```html
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.28.2/tocbot.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.28.2/tocbot.min.js"></script>
+  <style>
+    .toc {position:fixed;right:20px;top:80px;width:240px;background:#fff;padding:15px;border-left:4px solid #0066ff;box-shadow:0 0 12px rgba(0,0,0,.1);max-height:80vh;overflow-y:auto;font-size:14.5px;z-index:999;}
+    @media (max-width:900px){.toc{display:none;}}
+  </style>
+</head>
+
+<div class="toc">
+  <strong>目录</strong>
+  <div id="toc"></div>
+</div>
+
+<script>
+tocbot.init({
+  tocSelector: '#toc',
+  contentSelector: '#write',        // Typora 预览时正文就是 #write
+  headingSelector: 'h1, h2, h3, h4',
+  collapseDepth: 6,
+  scrollSmooth: true,
+  headingsOffset: 80
+});
+</script>
+```
+
+
 
 https://maochunguang.github.io/java-interview/interview_topn/toutiao.html#%E6%8A%80%E6%9C%AF%E7%82%B9%E6%B1%87%E6%80%BB
 
 # 目录
-
----
-
 
 [TOC]
 
