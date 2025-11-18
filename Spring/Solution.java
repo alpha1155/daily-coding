@@ -1,39 +1,36 @@
 class Solution {
-    public int minOperations(int[] nums) {
-        int len = nums.length;
-        int num1 = 0;
-        int g = 0;
-        for (int x : nums) {
-            if (x == 1)
-                num1++;
-            g = gcd(g, x);
-        }
-        if (num1 > 0) {
-            return len - num1;
-        }
-        if (g != 1) {
-            return -1;
-        }
-        int minLen = len;
+    public int numberOfSubstrings(String s) {
+        int len = s.length();
+        int result = 0;
+        int[] prefix = new int[len + 1];
+        prefix[0] = -1;
         for (int i = 0; i < len; i++) {
-            int currGcd = 0;
-            for (int j = i; j < len; j++) {
-                currGcd = gcd(currGcd, nums[j]);
-                if (currGcd == 1) {
-                    minLen = Math.min(minLen, j - i + 1);
-                    break;
+            if (i == 0 || s.charAt(i - 1) == '0')
+                prefix[i + 1] = i;
+            else
+                prefix[i + 1] = prefix[i];
+        }
+        System.out.println(prefix);
+        for (int i = 1; i <= len; i++) {
+            int cnt0 = s.charAt(i - 1) == '0' ? 1 : 0;
+            int j = i;
+            while (j > 0 && cnt0 * cnt0 <= len) {
+                int cnt1 = (i - prefix[j]) - cnt0;
+                if (cnt0 * cnt0 <= cnt1) {
+                    result += Math.min(j - prefix[j], cnt1 - cnt0 * cnt0 + 1);
                 }
+                System.out.println(cnt0, cnt1, j, prefix[j]);
+                j = prefix[j];
+                cnt0++;
             }
         }
-        return minLen + len - 2;
+        return result;
     }
 
-    private int gcd(int a, int b) {
-        while (b != 0) {
-            int temp = b;
-            b = a % b;
-            a = temp;
-        }
-        return a;
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        String s = "001101";
+        int res = sol.numberOfSubstrings(s);
+        System.out.println(res); // Expected output: 12
     }
 }

@@ -3,6 +3,13 @@
   "configurations": [
     {
       "type": "java",
+      "name": "Solution",
+      "request": "launch",
+      "mainClass": "Spring.Solution",
+      "projectName": "daily-coding_b580b55d"
+    },
+    {
+      "type": "java",
       "name": "main",
       "request": "launch",
       "mainClass": "main",
