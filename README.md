@@ -169,14 +169,32 @@
 
 3. 四种预定义线程池的区别和workqueue的大小
 
-   | 1.                                  | 类型                                   | workqueue size                                                                                                                                                                                                                                  | 使用场景 |
-   | ----------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-   | FixedThreadPool——固定大小线程池     | LinkdBlockingQueue——Integer.MAX_VALUE  | 线程数固定                                                                                                                                                                                                                                      |
-   | CacheThreadPool——可缓存线程池       | SynchronousQueue                       | **容量 0**，不存储任务 <br />**生产者-消费者直接交换**，put() 必须等 take() <br />**动态线程**：无空闲线程就创建，最多 Integer.MAX_VALUE<br /> **60s 回收空闲线程**<br />**优点**：响应快，适合短任务 <br />**风险**：任务突刺 → 线程爆炸 → OOM |
-   | SingleThreadExecutor——单线程线程池  | LinkedBlockingQueue——Integer.MAX_VALUE | 所有任务顺序执行，有任务无线堆积的风险                                                                                                                                                                                                          |
-   | ScheduledThreadPool——定时任务线程池 | DelayedWorkQueue——无界                 | 用于执行定时或周期性任务。                                                                                                                                                                                                                      |
+   1. | 类型                     | 核心队列（workQueue）              | 队列容量                      | 最大线程数                        | 典型使用场景 & 优缺点                                        |
+      | ------------------------ | ---------------------------------- | ----------------------------- | --------------------------------- | ------------------------------------------------------------ |
+      | **FixedThreadPool**      | `LinkedBlockingQueue<Runnable>`    | **无界**（Integer.MAX_VALUE） | **固定**（newFixedThreadPool(n)） | • 适用于**任务量可控、需要限制并发数**的场景（如数据库连接池）<br>• 优点：线程数稳定<br>• 风险：任务堆积 → OOM |
+      | **CachedThreadPool**     | `SynchronousQueue<Runnable>`       | **容量 0**（无缓冲）          | **无上限**（Integer.MAX_VALUE）   | • 适用于**大量短生命周期任务**（如 Web 请求处理）<br>• 优点：响应极快，自动扩缩容<br>• 致命风险：任务突刺 → 线程爆炸 → OOM |
+      | **SingleThreadExecutor** | `LinkedBlockingQueue<Runnable>`    | **无界**（Integer.MAX_VALUE） | **永远 1 个线程**                 | • 适用于**任务必须串行执行**的场景（如日志写入、顺序敏感操作）<br>• 优点：天然线程安全<br>• 风险：任务堆积 → OOM |
+      | **ScheduledThreadPool**  | `DelayedWorkQueue`（内部优先队列） | **无界**                      | **固定**（核心线程数）            | • 专门用于**定时任务 & 周期性任务**（ScheduledExecutorService）<br>• 支持 `schedule`、`scheduleAtFixedRate`、`scheduleWithFixedDelay` |
+
+      ### 面试高频补充
+
+      - **最容易 OOM 的两个线程池**：
+        - `FixedThreadPool` 和 `SingleThreadExecutor` → **无界队列**，任务堆积 → 内存泄漏
+        - `CachedThreadPool` → **无界线程数**，任务突刺 → 线程爆炸
+
+      - **生产推荐做法**：
+        
+        ```java
+        // 推荐：自定义 ThreadPoolExecutor，显式指定队列大小
+        new ThreadPoolExecutor(
+            corePoolSize, maxPoolSize,
+            keepAliveTime, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(5000),   // 有界队列，防止 OOM
+            new ThreadPoolExecutor.CallerRunsPolicy() // 饱和策略
+        );
 
    
+
 
 ## 3、JAVA怎么保持线程同步？常用的锁有什么？java锁升级是怎么样的？
 
@@ -184,17 +202,21 @@
 
 ## 4、synchonized和lock的区别？synchonized优化
 
-| 1.         | 特性                                                    | synchronized                                                                                  | lock |
-| ---------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| 定义       | JAVA关键字，JVM层面，自动加锁、释放锁                   | 接口，调用lock(),  unlock()                                                                   |
-| 灵活       | 不灵活                                                  | **非常灵活**。可以跨方法加锁和解锁；<br />可以尝试非阻塞地获取锁（`tryLock`）；可以响应中断。 |
-| 等待可中断 | 不可                                                    | 可以，调用lockInterruptibly()                                                                 |
-| 公平锁     | 仅非公平锁                                              | both，公平锁- new ReentrantLock(true)                                                         |
-| 条件队列   | 单一，通过wait(), notify(), notifyAll()操作一个等待队列 | 多个，通过 `newCondition()`可以创建多个条件变量（`Condition`对象）                            |
+| 特性                  | synchronized                                                 | Lock（ReentrantLock）                                        |
+| --------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 定义                  | Java 关键字，属于 **JVM 层面**                               | java.util.concurrent.locks.Lock **接口**，需要手动 `lock()` / `unlock()` |
+| 加锁/释放方式         | 自动加锁、自动释放（离开作用域即释放）                       | 必须**手动**调用 `lock()` 加锁，`unlock()` 释放（通常放在 finally 中） |
+| 灵活性                | 不灵活，锁的获取和释放只能在同一代码块内                     | **非常灵活**：<br/>• 可以跨方法/跨线程加锁解锁<br/>• 支持 `tryLock()` 非阻塞获取<br/>• 支持超时获取 |
+| 等待是否可中断        | **不可中断**（线程会一直阻塞）                               | **可中断**：`lockInterruptibly()` 在等待时可被 `interrupt()` 打断 |
+| 公平锁支持            | 只支持**非公平锁**（默认）                                   | **都支持**：<br/>`new ReentrantLock(false)` → 非公平（默认，性能更好）<br/>`new ReentrantLock(true) → 公平锁 |
+| 条件队列（Condition） | 只有一个隐式等待队列，通过 `wait()/notify()/notifyAll()` 操作 | **支持多个条件变量**：<br/>`lock.newCondition()` 可创建任意多个 `Condition`，实现精准唤醒 |
+| 锁升级路径            | 支持 **无锁 → 偏向锁 → 轻量级锁 → 重量级锁** 的自动升级优化（HotSpot JVM 特性） | **没有锁升级**，一直都是重量级（但实际底层也是偏向/轻量级优化，只是 API 层面不暴露） |
+| 异常释放              | 异常时 **JVM 自动释放锁**                                    | 异常时 **必须在 finally 中手动 unlock**，否则死锁            |
+| 适用场景              | 简单同步场景、代码侵入少                                     | 高并发、需要精细控制（中断、超时、公平、多个等待队列）的复杂并发场景 |
 
-2. 无锁 → 偏向锁 → 轻量级锁 → 重量级锁，JVM 自动优化，减少系统调用。
 
 
+无锁 → 偏向锁 → 轻量级锁 → 重量级锁，JVM 自动优化，减少系统调用。
 
 ## 5、hashmap同步问题，扩容机制，怎么扩容的过程？哈希冲突哪有哪些解决？
 
@@ -273,13 +295,17 @@ public static <T> T max(T a, T b) {
 
 2. new Integer(1) 每次创建新对象，Integer.valueOf(1) 会命中缓存。
 
-| 3.                                              | 追问                                              | 回答要点 |
-| ----------------------------------------------- | ------------------------------------------------- |
-| `Integer a = 1; Integer b = 1;` 为什么 `a==b`？ | 自动装箱调用 `valueOf()`，命中缓存                |
-| `new Integer(1) == 1` 呢？                      | 拆箱后 `int` 比较，`true`                         |
-| 缓存范围能改吗？                                | 可以：`-XX:AutoBoxCacheMax=1000`                  |
-| 为什么缓存 `-128~127`？                         | 覆盖 byte 范围，日常使用频繁                      |
-| `Integer` 是线程安全的吗？                      | 不可变（`final` + `private final int`），线程安全 |
+| 追问                                                       | 回答要点（直接背，面试必秒杀）                               |
+| ---------------------------------------------------------- | ------------------------------------------------------------ |
+| **Integer a = 1; Integer b = 1; 为什么 a == b 为 true？**  | 因为自动装箱时调用 `Integer.valueOf(1)`，而 `valueOf()` 在 **-128~127** 范围内会直接返回 **IntegerCache 缓存中的对象**，所以 a 和 b 指向同一个对象，`==` 为 true |
+| **new Integer(1) == new Integer(1) 呢？**                  | false。`new` 每次都在堆上创建**新对象**，即使数值相同，地址也不同 |
+| **new Integer(1) == 1 呢？**                               | true。会触发**自动拆箱**，把 `Integer` 转成 `int` 再比较值   |
+| **Integer a = 1; Integer b = new Integer(1); a == b 呢？** | false。一个走缓存，一个 new 新对象，地址不同                 |
+| **Integer a = 128; Integer b = 128; a == b 呢？**          | false（JDK 默认情况下）。128 超出缓存范围，`valueOf()` 每次都 new 新对象 |
+| **缓存范围能改吗？**                                       | 可以！JVM 参数：`-XX:AutoBoxCacheMax=666`（JDK 8+ 支持）<br>或者 `-Djava.lang.Integer.IntegerCache.high=1000` |
+| **为什么默认缓存 -128 ~ 127？**                            | 刚好覆盖 `byte` 的取值范围（-128 ~ 127），日常业务中小整数使用最频繁，缓存收益最大 |
+| **Integer 是线程安全的吗？**                               | **线程安全**。因为 Integer 是**不可变类**（`private final int value` + 所有方法不修改状态），多个线程读同一个对象完全没问题 |
+| **那 Integer a = 1; a = a + 1; 会不会线程不安全？**        | 这段代码不安全！因为 `a = a + 1` 会触发**拆箱 → 计算 → 重新装箱 → 赋值**，属于复合操作，没有同步，多个线程并发执行可能出现值覆盖 |
 
 
 
@@ -374,17 +400,9 @@ RUNNABLE ←──────────────────────�
 TERMINATED
 ```
 
-
-
-
-
 ## 14、finalize方法
 
 > “finalize 是 Object 的方法，GC 前可能调用一次，用于资源清理。 但不确定、性能差、已废弃，实际开发一律不用！ 用 try-with-resources 或 Cleaner 替代。”
-
-
-
-
 
 ## 15、说说抽象类和接口的区别。
 
@@ -427,34 +445,33 @@ TERMINATED
 
 - 常见 RuntimeException：NullPointerException、ArrayIndexOutOfBoundsException、ClassCastException、IllegalArgumentException、UnsupportedOperationException 等；所有 RuntimeException 及其子类 + Error 均为非受检异常。
 
-  | -                                 | 异常          | 触发场景                            | 生产防御 |
-  | --------------------------------- | ------------- | ----------------------------------- |
-  | `NullPointerException`            | 空对象调用    | `Objects.requireNonNull` / Optional |
-  | `IndexOutOfBoundsException`       | 数组/列表越界 | `list.get(i)` 前 `checkIndex`       |
-  | `ClassCastException`              | 类型转换失败  | `instanceof` 判断                   |
-  | `IllegalArgumentException`        | 参数非法      | 入参校验                            |
-  | `IllegalStateException`           | 状态非法      | 状态机保护                          |
-  | `UnsupportedOperationException`   | 接口未实现    | `Collections.unmodifiableList()`    |
-  | `ConcurrentModificationException` | 迭代中修改    | 用 `CopyOnWriteArrayList`           |
-  | `ArithmeticException`             | `/0`          | 除零检查                            |
+  - | 异常类                              | 继承关系                   | 是否 Unchecked | 典型触发场景                                             | 生产防御最佳实践（直接背）                                   |
+    | ----------------------------------- | -------------------------- | -------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+    | **NullPointerException**            | ← RuntimeException         | Unchecked      | 对象为 null 时调用方法/访问字段                          | 1. `Objects.requireNonNull(obj, "xxx不能为空")`<br>2. `Optional.ofNullable(x).orElse(default)`<br>3. Lombok @NonNull |
+    | **IndexOutOfBoundsException**       | ← RuntimeException         | Unchecked      | `list.get(i)`、`array[i]`、`substring` 参数越界          | `if (i >= 0 && i < list.size())`<br>Guava: `checkPositionIndexes(start, end, size)` |
+    | **ClassCastException**              | ← RuntimeException         | Unchecked      | 强制类型转换失败（如 `(Dog) animal` 但 animal 是 Cat）   | `if (animal instanceof Dog)`<br>或使用泛型彻底避免           |
+    | **IllegalArgumentException**        | ← RuntimeException         | Unchecked      | 参数非法（自己校验失败时抛）                             | 入参统一校验（@Valid + Bean Validation）<br>手动：`Preconditions.checkArgument(age > 0, "年龄必须大于0")` |
+    | **IllegalStateException**           | ← RuntimeException         | Unchecked      | 对象当前状态不允许执行操作（如已关闭的连接再 close）     | 状态机防护：`if (state != RUNNING) throw new IllegalStateException("当前状态不支持此操作")` |
+    | **UnsupportedOperationException**   | ← RuntimeException         | Unchecked      | 调用了接口未实现的方法（如 `unmodifiableList.add()`）    | 防御性返回不可变集合：<br>`Collections.unmodifiableList(list)`<br>`List.of(...)`（JDK9+） |
+    | **ConcurrentModificationException** | ← RuntimeException         | Unchecked      | foreach 遍历时集合被结构性修改（add/remove）             | 1. 改用迭代器 `Iterator.remove()`<br>2. 读写分离：`CopyOnWriteArrayList`（写少读多）<br>3. 加锁遍历 |
+    | **ArithmeticException**             | ← RuntimeException         | Unchecked      | 除以 0、取模 0、`BigDecimal` 除不尽且没设置 RoundingMode | `if (divisor == 0) throw new IllegalArgumentException("除数不能为0")`<br>BigDecimal 用 `divide(divisor, RoundingMode.HALF_UP)` |
+    | **NumberFormatException**           | ← IllegalArgumentException | Unchecked      | `Integer.parseInt("abc")`                                | `try { Integer.parseInt(str) } catch (NumberFormatException e) { ... }`<br>Guava `Ints.tryParse(str)` |
+    | **NoSuchElementException**          | ← RuntimeException         | Unchecked      | `Optional.get()` 没值、`queue.remove()` 空队列           | 改用 `Optional.orElse(...)`、`queue.poll()`、Guava `Iterators.getNext(iterator, default)` |
 
 - 受检异常
 
-  | -                           | 异常类              | 包                                | 常见场景 |
-  | --------------------------- | ------------------- | --------------------------------- |
-  | `IOException`               | `java.io`           | 文件读写、网络 IO                 |
-  | `FileNotFoundException`     | `java.io`           | 文件未找到                        |
-  | `EOFException`              | `java.io`           | 文件结束异常                      |
-  | `SQLException`              | `java.sql`          | 数据库操作异常                    |
-  | `ClassNotFoundException`    | `java.lang`         | `Class.forName()` 找不到类        |
-  | `InterruptedException`      | `java.lang`         | `Thread.sleep()`, `wait()` 被打断 |
-  | `ParseException`            | `java.text`         | 日期/数字解析失败                 |
-  | `MalformedURLException`     | `java.net`          | URL 格式错误                      |
-  | `NoSuchMethodException`     | `java.lang.reflect` | 反射找不到方法                    |
-  | `InvocationTargetException` | `java.lang.reflect` | 反射调用目标异常                  |
-
-
-
+  - | 异常类                        | 包路径              | 继承关系                       | 是否 Checked（必须捕获/抛出） | 常见触发场景 & 面试重点                                      |
+    | ----------------------------- | ------------------- | ------------------------------ | ----------------------------- | ------------------------------------------------------------ |
+    | **IOException**               | `java.io`           | ← Exception                    | Checked                       | 所有 I/O 操作的父异常（文件、网络、管道等）                  |
+    | **FileNotFoundException**     | `java.io`           | ← IOException                  | Checked                       | 文件不存在或路径错误，`new FileInputStream("xxx")` 时常见    |
+    | **EOFException**              | `java.io`           | ← IOException                  | Checked                       | 读到文件末尾但还想继续读（如 DataInputStream.readFully）     |
+    | **SQLException**              | `java.sql`          | ← Exception                    | Checked                       | 所有数据库操作异常（连接、SQL 语法、约束违反等）             |
+    | **ClassNotFoundException**    | `java.lang`         | ← ReflectiveOperationException | Checked                       | `Class.forName("com.xxx.X")` 找不到类，动态加载失败          |
+    | **NoSuchMethodException**     | `java.lang`         | ← ReflectiveOperationException | Checked                       | 反射调用 `getMethod()`、`getConstructor()` 找不到方法        |
+    | **InvocationTargetException** | `java.lang.reflect` | ← ReflectiveOperationException | Checked                       | 反射调用目标方法时抛出的**原始异常**会被包装成这个（getCause() 取真实异常） |
+    | **InterruptedException**      | `java.lang`         | ← Exception                    | Checked                       | `Thread.sleep()、wait()、BlockingQueue.take()` 等阻塞操作被 `interrupt()` 打断 |
+    | **ParseException**            | `java.text`         | ← Exception                    | Checked                       | `SimpleDateFormat.parse()`、`DecimalFormat.parse()` 格式不匹配 |
+    | **MalformedURLException**     | `java.net`          | ← IOException                  | Checked                       | `new URL("http://")` 地址格式非法                            |
 
 
 ## 19、什么是阻塞和非阻塞，什么是同步，异步？
