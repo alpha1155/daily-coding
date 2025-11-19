@@ -1,3 +1,57 @@
+[TOC]
+
+###  01. **使用 Java 8 的优点是什么？**
+
+**技术价值**：函数式编程、Stream API、新日期时间API、接口默认方法
+
+### 02. **集合与流有何不同？**
+
+**架构意义**：理解数据处理的两种范式，为微服务数据流设计奠定基础
+
+### 03. **什么是 Lambda 表达式？**
+
+**现代应用**：Spring Boot中函数式端点、Reactive编程基础
+
+### 04. **解释 Predicate 和 Consumer 函数式接口**
+
+**实战价值**：Spring Data JPA条件查询、RabbitMQ消息处理
+
+### 05. **peek()方法在 Java 8 中的作用？**
+
+**调试技巧**：Stream流水线调试、Redis缓存监控
+
+### 06. **什么是函数式接口？**
+
+**设计模式**：Spring Framework中的回调机制、事件驱动编程
+
+### 07. **接口中的静态方法有什么作用？**
+
+**API设计**：HANA数据库连接工具类、服务工厂方法
+
+### 08. **skip(long)和limit(long)的区别？**
+
+**分页优化**：Cloud Foundry分页查询、大数据集处理
+
+### 09. **抽象类和接口的异同？**
+
+**架构设计**：微服务契约设计、领域模型定义
+
+### 10. **overload与override的区别？**
+
+**多态理解**：Spring Bean方法重载、REST API版本控制
+
+### 11. **HashMap在Java 8中的变化？**
+
+**性能优化**：Redis缓存键冲突优化、高并发场景应用
+
+### 12. **HashMap、LinkedHashMap、Has...**
+
+**集合选型**：微服务缓存策略、消息队列数据结构
+
+### 13. **Lambda参数列表与箭头运算符的作用**
+
+**语法精要**：Spring Cloud Function、事件驱动架构
+
 ### Java 基础
 
 面向对象编程的三大特性
@@ -16,8 +70,6 @@
      - 当前类、同一包
    - private
      - 当前类
-
-
 
 Java 中的类型主要分为两大类：**基本数据类型（Primitive Types）** 和 **引用类型（Reference Types）**，其中引用类型包括 **类（Class）**、**接口（Interface）**、**数组（Array）** 等。集合（Collection）是引用类型的一种，属于 Java 集合框架（Java Collections Framework）。
 
@@ -466,7 +518,122 @@ public class CollectionExamples {
 
 ---
 
-需要 **并发集合**、**Stream 操作**、**自定义 Comparator** 等进阶用法，也可以继续问！
+
+
+其中 **51 个真关键字** + **2 个保留字**（const、goto 不能用） + **3 个字面量**（true、false、null）常被误认为关键字。
+
+### 1. 数据类型（8个）
+
+| 关键字  | 含义       |
+| ------- | ---------- |
+| byte    | 8位整数    |
+| short   | 16位整数   |
+| int     | 32位整数   |
+| long    | 64位整数   |
+| float   | 单精度浮点 |
+| double  | 双精度浮点 |
+| char    | 字符       |
+| boolean | 布尔       |
+
+### 2. 流程控制（12个）
+
+| 关键字   | 含义                           |
+| -------- | ------------------------------ |
+| if       | 如果                           |
+| else     | 否则                           |
+| switch   | 分支（JDK7+支持String）        |
+| case     | case标签                       |
+| default  | 默认分支                       |
+| for      | for循环                        |
+| do       | do-while循环                   |
+| while    | while循环                      |
+| break    | 跳出循环/分支                  |
+| continue | 跳过本次循环                   |
+| return   | 返回                           |
+| yield    | switch表达式中产出值（JDK13+） |
+
+### 3. 类、接口、修饰符（18个）
+
+| 关键字                        | 含义                   |
+| ----------------------------- | ---------------------- |
+| class                         | 定义类                 |
+| interface                     | 定义接口               |
+| enum                          | 枚举                   |
+| record                        | 记录类（JDK16+）       |
+| abstract                      | 抽象类/方法            |
+| extends                       | 继承类                 |
+| implements                    | 实现接口               |
+| public                        | 公开访问               |
+| protected                     | 受保护访问             |
+| private                       | 私有访问               |
+| final                         | 不可变（类/方法/变量） |
+| static                        | 静态                   |
+| strictfp                      | 严格浮点计算           |
+| synchronized                  | 线程同步               |
+| volatile                      | 防止指令重排序         |
+| transient                     | 序列化时忽略           |
+| native                        | 本地方法（JNI）        |
+| sealed / non-sealed / permits | 密封类（JDK17+）       |
+
+### 4. 异常处理（6个）
+
+| 关键字  | 含义               |
+| ------- | ------------------ |
+| try     | 尝试               |
+| catch   | 捕获异常           |
+| finally | 无论如何都会执行   |
+| throw   | 抛出异常           |
+| throws  | 方法声明抛出的异常 |
+| assert  | 断言（-ea开启）    |
+
+### 5. 包与导入（3个）
+
+| 关键字  | 含义              |
+| ------- | ----------------- |
+| package | 包声明            |
+| import  | 导入类/包         |
+| module  | 模块声明（JDK9+） |
+
+### 6. 特殊保留字（2个，不能用！）
+
+| 关键字 | 说明                |
+| ------ | ------------------- |
+| goto   | 保留字，未实现      |
+| const  | 保留字，用final代替 |
+
+### 7. 字面量（3个，常被误认为关键字）
+
+| 字面量 | 类型     |
+| ------ | -------- |
+| true   | boolean  |
+| false  | boolean  |
+| null   | 引用空值 |
+
+### 8. 上下文关键字（模块系统用，JDK9+）
+
+| 关键字     | 说明             |
+| ---------- | ---------------- |
+| open       | 开放模块         |
+| module     | 定义模块         |
+| requires   | 依赖模块         |
+| exports    | 导出包           |
+| opens      | 开放包给反射     |
+| uses       | 使用服务         |
+| provides   | 提供服务实现     |
+| with       | 与provides一起用 |
+| transitive | 传递依赖         |
+
+### 终极记忆口诀（超好记）
+
+```
+8类型 12流程 18修饰 6异常 3包
+2保留 3字面量 9模块系统
+8+12+18+6+3+2+3+9 = 61 → 去掉重复的就53个
+```
+
+
+
+
 
 
 
@@ -477,6 +644,7 @@ public class CollectionExamples {
 ## 多态的实现机制
 
  1. ### 方法重写（Override）
+
  2. ### 向上转型（Upcasting）
 
     - ```java
@@ -495,6 +663,7 @@ public class CollectionExamples {
           }
       }
       ```
+
  3. ### 动态绑定（运行时多态）
 
     - Java 在运行时根据对象的实际类型来确定调用哪个方法，而不是根据引用类型。
@@ -502,12 +671,17 @@ public class CollectionExamples {
    - 应用
 
      1. 支付系统
+
      2. 日志
+
      3. ### 数据访问层（DAO模式）
+
    - ## 多态的优势
 
  1. ### 代码可扩展性
+
  2. ### 代码可维护性
+
  3. ### 松耦合设计
 
     - ```java
@@ -534,7 +708,7 @@ public class CollectionExamples {
       class CsvExporter implements DataExporter { /* 实现 */ }
       ```
 
-3. 解释一下 Java 中的垃圾回收机制，常见的垃圾回收算法有哪些？
+4. 解释一下 Java 中的垃圾回收机制，常见的垃圾回收算法有哪些？
 
    Java 的垃圾回收（Garbage Collection, GC）是**自动内存管理机制**，它负责回收不再使用的对象所占用的内存空间，防止内存泄漏。
 
@@ -546,7 +720,7 @@ public class CollectionExamples {
      // 简单但Java不采用的方法
      class ReferenceCounting {
          private int count = 0;
-  
+     
          public void addReference() { count++; }
          public void removeReference() { 
              count--; 
@@ -567,21 +741,26 @@ public class CollectionExamples {
      // 2. 方法区中的静态变量
      // 3. 方法区中的常量
      // 4. 本地方法栈中的变量
-  
+     
      public class ReachabilityExample {
          private static Object staticObj;  // GC Root
          private final Object finalObj;    // GC Root
-  
+     
          public void method() {
              Object localVar = new Object();  // GC Root
              // 方法执行期间localVar是根对象
          }
      }
      ```
+
    - ### 标记-清除算法（Mark-Sweep）
+
    - ### 复制算法（Copying）
+
    - ### 标记-整理算法（Mark-Compact）
+
    - ### 分代收集算法（Generational Collection）✅ **Java主要采用**
+
    - # Java 垃圾回收机制详解
 
      ## 一、垃圾回收概述
@@ -769,6 +948,7 @@ public class CollectionExamples {
     
      // 永久代/元空间（PermGen/Metaspace）
      private MemorySpace metaspace;  // 类元数据
+
  }
 
  ## 四、Java中的垃圾收集器
@@ -776,53 +956,53 @@ public class CollectionExamples {
  ### 1. 串行收集器（Serial GC）
 
  ```java
- // 单线程收集器，适合客户端应用
- // 启动参数：-XX:+UseSerialGC
- public class SerialGCExample {
-     // 适合小内存、单CPU环境
- }
+// 单线程收集器，适合客户端应用
+// 启动参数：-XX:+UseSerialGC
+public class SerialGCExample {
+    // 适合小内存、单CPU环境
+}
  ```
 
  ### 2. 并行收集器（Parallel GC / Throughput Collector）
 
  ```java
- // 多线程收集器，注重吞吐量
- // 启动参数：-XX:+UseParallelGC
- public class ParallelGCExample {
-     // 适合后台处理、计算密集型应用
- }
+// 多线程收集器，注重吞吐量
+// 启动参数：-XX:+UseParallelGC
+public class ParallelGCExample {
+    // 适合后台处理、计算密集型应用
+}
  ```
 
  ### 3. CMS收集器（Concurrent Mark-Sweep）
 
  ```java
- // 并发低停顿收集器
- // 启动参数：-XX:+UseConcMarkSweepGC
- public class CMSGCExample {
-     // 过程：初始标记 -> 并发标记 -> 重新标记 -> 并发清除
-     // 适合响应时间敏感的应用
- }
+// 并发低停顿收集器
+// 启动参数：-XX:+UseConcMarkSweepGC
+public class CMSGCExample {
+    // 过程：初始标记 -> 并发标记 -> 重新标记 -> 并发清除
+    // 适合响应时间敏感的应用
+}
  ```
 
  ### 4. G1收集器（Garbage-First）✅ **推荐使用**
 
  ```java
- // 面向服务端的收集器，兼顾吞吐量和停顿时间
- // 启动参数：-XX:+UseG1GC
- public class G1GCExample {
-     // 将堆划分为多个Region
-     // 优先回收垃圾最多的Region
- }
+// 面向服务端的收集器，兼顾吞吐量和停顿时间
+// 启动参数：-XX:+UseG1GC
+public class G1GCExample {
+    // 将堆划分为多个Region
+    // 优先回收垃圾最多的Region
+}
  ```
 
  ### 5. ZGC和Shenandoah（低延迟收集器）
 
  ```java
- // 超低停顿时间的收集器
- // 启动参数：-XX:+UseZGC 或 -XX:+UseShenandoahGC
- public class LowLatencyGC {
-     // 适合大内存、要求低延迟的应用
- }
+// 超低停顿时间的收集器
+// 启动参数：-XX:+UseZGC 或 -XX:+UseShenandoahGC
+public class LowLatencyGC {
+    // 适合大内存、要求低延迟的应用
+}
  ```
 
 
@@ -854,23 +1034,25 @@ public class CollectionExamples {
       4. CopyOnWriteArrayList
          1. *// 线程安全，写时复制*
          2. *// 适用场景：读多写少的并发场景*
-      
+
    2. Set
-   
+
       1. HashSet
+
       2. LinkedHashSet
+
       3. #### TreeSet
-      
+
    3. Map
-   
+
       1. HashMap
-      
+
       2. LinkedHashMap
-      
+
          1. *// 遍历顺序：Banana, Apple* *// 适用场景：需要保持插入或访问顺序*
-   
+
       3. TreeMap
-      
+
          1. ```java
             	// 基于红黑树，键有序
             Map<String, Integer> treeMap = new TreeMap<>();
@@ -881,30 +1063,37 @@ public class CollectionExamples {
             // 特点：键有序，操作O(log n)
             // 适用场景：需要有序的键值对
             ```
-      
+
       4. #### ConcurrentHashMap
-      
-          1. ```
-             // 线程安全的HashMap
-             Map<String, Integer> concurrentMap = new ConcurrentHashMap<>();
-             // 分段锁机制，高并发性能好
-             ```
-      
-           1. 在Java 7及之前版本中，`ConcurrentHashMap`的实现方式是：
-             1. **将整个哈希表分成多个段(Segment)**，默认16个段
-             2. **每个段独立加锁**，相当于一个小的HashMap
-             3. **不同段可以并发操作**，只有相同段的操作才会竞争锁
-           2. 在Java 8中，`ConcurrentHashMap`进行了重大改进：
-              1. **废弃分段锁**，改用**CAS + synchronized**实现
-              2. **锁粒度更细**：只锁定单个哈希桶(bucket)
-              3. **红黑树优化**：当链表长度超过8时转为红黑树
-           3. 适用场景
-              1. **高并发读写**：如缓存系统
-              2. **频繁更新**：实时统计计数
-              3. **大规模数据**：需要线程安全的键值存储
-      
+
+         1. ```
+            // 线程安全的HashMap
+            Map<String, Integer> concurrentMap = new ConcurrentHashMap<>();
+            // 分段锁机制，高并发性能好
+            ```
+
+          2. 在Java 7及之前版本中，`ConcurrentHashMap`的实现方式是：
+
+            3. **将整个哈希表分成多个段(Segment)**，默认16个段
+
+            4. **每个段独立加锁**，相当于一个小的HashMap
+
+            5. **不同段可以并发操作**，只有相同段的操作才会竞争锁
+
+          6. 在Java 8中，`ConcurrentHashMap`进行了重大改进：
+
+             1. **废弃分段锁**，改用**CAS + synchronized**实现
+             2. **锁粒度更细**：只锁定单个哈希桶(bucket)
+             3. **红黑树优化**：当链表长度超过8时转为红黑树
+
+          7. 适用场景
+
+             1. **高并发读写**：如缓存系统
+             2. **频繁更新**：实时统计计数
+             3. **大规模数据**：需要线程安全的键值存储
+
       5. 什么是 Java 的异常处理机制，`try-catch-finally`是如何工作的，你遇到过哪些常见的异常，如何处理？
-      
+
          ```java
          public void readFile(String filename) {
              FileReader reader = null;
@@ -934,9 +1123,8 @@ public class CollectionExamples {
              }
          }
          ```
-      
+
          - #### 1. NullPointerException
-      
 
  ```
  // 原因：调用null对象的方法或访问字段
@@ -1112,9 +1300,13 @@ public class CollectionExamples {
    - •**代码冗余**：相同的日志代码出现在每个方法里。
    - •**代码混乱**：业务逻辑被非核心功能代码淹没。
    - •**维护困难**：修改日志格式需要改动所有相关类。
+
 2. 谈谈 Spring Boot 与 Spring 的区别和联系，使用 Spring Boot 有哪些优势，你在项目中是如何进行 Spring Boot 配置的？
+
 3. 解释一下 Java 中的 Servlet 和 JSP，它们在 Web 开发中的作用和区别是什么？
+
 4. 你有过使用 Java 进行数据库开发的经验吗，谈谈 JDBC 的使用，以及如何使用 ORM 框架（如 Hibernate 或 MyBatis）进行数据库操作，对比一下它们的优缺点。
+
 5. 如何在 Java 中实现一个简单的 RESTful Web 服务，你使用过哪些相关的框架或工具（如 Spring MVC、Jersey 等）？
 
 ### 性能与并发
