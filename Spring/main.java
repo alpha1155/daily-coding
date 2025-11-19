@@ -1,36 +1,21 @@
-// Removed package declaration to match the expected package
-
-import java.util.ArrayList;
-import java.util.List;
-
-public class main {
-    public void main(String[] args) throws Exception {
-        minOperations(new int[] {2, 6, 3, 4});
-    }
-
-    public int minOperations(int[] nums) {
-        List<Integer> list = new ArrayList<>();
-        /*
-         * 寻找1
-         * for length长度，每次找公约数
-        */
-        for (int i = 0; i < nums.length - 1; i++) {
-            Integer gcd = gcd(nums[i], nums[i + 1]);
-            list.add(gcd);
-            if (gcd == 1) {
-                System.out.println(list);
-                return 0;
+public class Main {
+    public String triangleType(int[] var1) {
+        if (var1[1] + var1[2] > var1[0] && var1[0] + var1[1] > var1[2]
+                && var1[0] + var1[2] > var1[1]) {
+            if (var1[0] == var1[1] && var1[1] == var1[2]) {
+                return "equilateral";
+            } else {
+                return var1[0] != var1[1] && var1[0] != var1[2] && var1[2] != var1[1] ? "scalene"
+                        : "isosceles";
             }
+        } else {
+            return "none";
         }
-        return -1;
     }
 
-    private int gcd(int a, int b) {
-        while (b != 0) {
-            int temp = b;
-            b = a % b;
-            a = temp;
-        }
-        return a;
+    public static void main(String[] var0) {
+        Main var1 = new Main();
+        String var2 = var1.triangleType(new int[] {3, 4, 5});
+        System.out.println(var2);
     }
 }
