@@ -138,67 +138,159 @@
 ## 1.进程和线程的区别？使用线程这能节约时间吗？
 
 1. **进程是操作系统进行资源分配和保护的独立单元，而线程是程序执行和调度的基本单元，是进程内的一条执行路径。**
+
+   1. ### 容器与微服务的视角
+
+      在我们熟悉的Cloud Foundry微服务架构中，可以这样理解：
+
+      | 维度         | **进程（Process）**                                          | **线程（Thread）**                                           |
+      | :----------- | :----------------------------------------------------------- | :----------------------------------------------------------- |
+      | **本质**     | **操作系统进行资源分配和保护的独立单元**。一个**独立的JVM实例**，拥有完整的**私有内存空间**（堆、栈、元空间等）。 | **CPU调度和执行的基本单元**。一个进程内的**一条独立执行流**，共享进程的**堆内存和方法区**，但拥有自己的**栈和程序计数器**。 |
+      | **资源隔离** | **强隔离**。如同我们在Cloud Foundry上部署的一个**独立的微服务实例**。每个进程有独立的内存空间、文件句柄、网络端口。一个进程崩溃**不会影响**其他进程。 | **共享资源**。如同一个微服务实例内部的**多个@Async任务**或**WebFlux的Event Loop线程**。共享所属进程的堆内存（即共享Spring的ApplicationContext、Bean实例、静态变量等）。一个线程崩溃**可能导致**整个JVM进程退出。 |
+      | **创建开销** | **大**。需要分配独立的内存空间、加载类、初始化Spring容器等。这好比在CF上**cf push一个新应用实例**，需要走完整的构建、部署流程。 | **小**。在已初始化的JVM和Spring容器内创建，共享已加载的类。如同在**已运行的Pod内启用新的@Async线程**，效率极高。 |
+      | **通信方式** | **复杂**。需要**IPC**，如**REST API**、**gRPC**、**消息队列（RabbitMQ）**。这就是我们**微服务间的通信方式**。 | **极简单**。直接通过**共享的堆内存**读写同一个对象（如一个`ConcurrentHashMap`或`AtomicInteger`）。但必须使用`synchronized`、`Lock`、`volatile`等机制保证**可见性和原子性**。 |
+      | **类比**     | **一个独立的微服务实例**（如`user-service`实例）             | **一个微服务实例内部的一个并发任务**（如处理一个HTTP请求的Tomcat线程） |
+
 2. 节约时间
    1. 对于**计算密集型**任务，目标是利用多核实现**并行**来压缩计算时间。
+
+      1. 使用线程数接近CPU核数的线程池（如`Runtime.getRuntime().availableProcessors()`），避免过度切换。
+
    2. 对于**I/O密集型**任务，目标是利用**并发**来填充I/O等待时间，提高CPU利用率和系统吞吐量。
+
+      1.  利用I/O等待时间。当线程A在等待用户服务响应时，CPU可以切换到线程B去处理商品服务请求，**压榨CPU空闲时间**。
+
+   3. | 特性         | **CPU密集型 (CPU-Bound)**                 | **I/O密集型 (I/O-Bound)**                          |
+      | :----------- | :---------------------------------------- | :------------------------------------------------- |
+      | **核心特征** | 任务执行速度主要受限于**CPU的运算能力**。 | 任务执行速度主要受限于**输入/输出操作的速度**。    |
+      | **耗时大头** | 进行大量计算、逻辑处理、数据转换。        | 等待网络响应、数据库查询、磁盘读写、消息队列消费。 |
+      | **资源瓶颈** | **CPU核心数**、主频、缓存。               | **网络带宽**、磁盘I/O、数据库连接池、外部服务RT。  |
 
 ## 2.分析一下线程池的参数？线程池工作流程？四种预定义的线程池？各自的workqueue size是多少？
 
-1. ```java
-   ThreadPoolExecutor executor = new ThreadPoolExecutor(
-   	int corePoolSize,
-   	int maximumPoolSize,
-   	long keepAliveTime,
-   	TimeUnit unit,
-   	BlockingQueue<Runnable> workQueue,
-   	ThreadFactory threadFactory,
-   	RejectedExecutionHandler handler
-   );
-   ```
-
-2. 工作流程
-
-   1. 提交任务
-   2. 核心线程是否已满？
-      1. 否--即使有线程空闲，也会立即创建一个新的核心线程
-      2. 是，下一步
-   3. 工作队列是否已满？
-      1. 否，放入工作队列等待执行
-      2. 是，下一步
-   4. 线程数是否达到最大值
-      1. 否，创建一个创建一个新的非核心线程执行任务
-      2. 是，下一步
-   5. 触发拒绝策略
-      1. 线程和队列都已饱和，无法处理新任务，调用rejectedExecutionHandler处理这个被拒绝的任务
-
-3. 四种预定义线程池的区别和workqueue的大小
-
-   1. | 类型                     | 核心队列（workQueue）              | 队列容量                      | 最大线程数                        | 典型使用场景 & 优缺点                                        |
-      | ------------------------ | ---------------------------------- | ----------------------------- | --------------------------------- | ------------------------------------------------------------ |
-      | **FixedThreadPool**      | `LinkedBlockingQueue<Runnable>`    | **无界**（Integer.MAX_VALUE） | **固定**（newFixedThreadPool(n)） | • 适用于**任务量可控、需要限制并发数**的场景（如数据库连接池）<br>• 优点：线程数稳定<br>• 风险：任务堆积 → OOM |
-      | **CachedThreadPool**     | `SynchronousQueue<Runnable>`       | **容量 0**（无缓冲）          | **无上限**（Integer.MAX_VALUE）   | • 适用于**大量短生命周期任务**（如 Web 请求处理）<br>• 优点：响应极快，自动扩缩容<br>• 致命风险：任务突刺 → 线程爆炸 → OOM |
-      | **SingleThreadExecutor** | `LinkedBlockingQueue<Runnable>`    | **无界**（Integer.MAX_VALUE） | **永远 1 个线程**                 | • 适用于**任务必须串行执行**的场景（如日志写入、顺序敏感操作）<br>• 优点：天然线程安全<br>• 风险：任务堆积 → OOM |
-      | **ScheduledThreadPool**  | `DelayedWorkQueue`（内部优先队列） | **无界**                      | **固定**（核心线程数）            | • 专门用于**定时任务 & 周期性任务**（ScheduledExecutorService）<br>• 支持 `schedule`、`scheduleAtFixedRate`、`scheduleWithFixedDelay` |
-
-      ### 面试高频补充
-
-      - **最容易 OOM 的两个线程池**：
-        - `FixedThreadPool` 和 `SingleThreadExecutor` → **无界队列**，任务堆积 → 内存泄漏
-        - `CachedThreadPool` → **无界线程数**，任务突刺 → 线程爆炸
-      - **生产推荐做法**：
 ```java
-        // 推荐：自定义 ThreadPoolExecutor，显式指定队列大小
-        new ThreadPoolExecutor(
-            corePoolSize, maxPoolSize,
-            keepAliveTime, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>(5000),   // 有界队列，防止 OOM
-            new ThreadPoolExecutor.CallerRunsPolicy() // 饱和策略
-        );
+ThreadPoolExecutor executor = new ThreadPoolExecutor(
+	int corePoolSize,//核心线程数
+	int maximumPoolSize,//最大线程数
+	long keepAliveTime,//线程空闲存活时间
+	TimeUnit unit,//时间单位
+	BlockingQueue<Runnable> workQueue,//工作队列
+	ThreadFactory threadFactory,//线程工厂
+	RejectedExecutionHandler handler//拒绝策略
+);
 ```
 
-## 3.java怎么保持线程同步常用的锁有什么java锁升级是怎么样的
+### 2.1工作流程
 
-Java 通过 synchronized、Lock（ReentrantLock）、原子类（CAS）、并发容器、线程安全工具等实现线程同步；常用锁有偏向锁、轻量级锁、重量级锁；锁升级路径为：无锁 → 偏向锁 → 轻量级锁 → 重量级锁，JVM 自动优化，减少系统调用。
+1. 提交任务
+2. 核心线程是否已满？
+   1. 否--即使有线程空闲，也会立即创建一个新的核心线程
+   2. 是，下一步
+3. 工作队列是否已满？
+   1. 否，放入工作队列等待执行
+   2. 是，下一步
+4. 线程数是否达到最大值
+   1. 否，创建一个创建一个新的非核心线程执行任务
+   2. 是，下一步
+5. 触发拒绝策略
+   1. 线程和队列都已饱和，无法处理新任务，调用rejectedExecutionHandler处理这个被拒绝的任务
+
+### 2.2四种预定义线程池的区别和workqueue的大小
+
+| 类型                                              | 核心队列（workQueue）              | 队列容量/最大线程数                                          |      | 典型使用场景 & 优缺点                                        |
+| :------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------ | ---- | ------------------------------------------------------------ |
+| **FixedThreadPool**<br />固定大小线程池           | `LinkedBlockingQueue<Runnable>`    | **无界**（Integer.MAX_VALUE）<br />**固定**（newFixedThreadPool(n)） |      | • 适用于**任务量可控、需要限制并发数**的场景（如数据库连接池） <br />• 优点：线程数稳定 <br />• 风险：任务堆积 → OOM |
+| **CachedThreadPool**<br />可缓存线程池            | `SynchronousQueue<Runnable>`       | **容量 0**（无缓冲）<br />**无上限**（Integer.MAX_VALUE）    |      | • 适用于**大量短生命周期任务**（如 Web 请求处理） <br />• 优点：响应极快，自动扩缩容 <br />• 致命风险：任务突刺 → 线程爆炸 → OOM |
+| **SingleThreadExecutor**<br />单线程化线程池      | `LinkedBlockingQueue<Runnable>`    | **无界**（Integer.MAX_VALUE）<br />**永远 1 个线程**         |      | • 适用于**任务必须串行执行**的场景（如日志写入、顺序敏感操作）<br /> • 优点：天然线程安全 <br />• 风险：任务堆积 → OOM |
+| **ScheduledThreadPool**<br />定时周期性任务线程池 | `DelayedWorkQueue`（内部优先队列） | **无界<br />**固定**（核心线程数）**                         |      | • 专门用于**定时任务 & 周期性任务**（ScheduledExecutorService）<br /> • 支持 `schedule`、`scheduleAtFixedRate`、`scheduleWithFixedDelay` |
+
+### 2.3线程工厂
+
+- 用于创建新线程的工厂类。
+- 可以定制线程的名称、优先级、是否为守护线程等属性。
+
+### 面试高频补充
+
+- **最容易 OOM 的两个线程池**：
+  - `FixedThreadPool` 和 `SingleThreadExecutor` → **无界队列**，任务堆积 → 内存泄漏
+  - `CachedThreadPool` → **无界线程数**，任务突刺 → 线程爆炸
+- **生产推荐做法**：
+
+```java
+// 推荐：自定义 ThreadPoolExecutor，显式指定队列大小
+new ThreadPoolExecutor(
+    corePoolSize, 
+    maxPoolSize,
+    keepAliveTime, 
+    TimeUnit.SECONDS,
+    new LinkedBlockingQueue<>(5000),   // 有界队列，防止 OOM
+    threadFactory,
+    new ThreadPoolExecutor.CallerRunsPolicy() // 饱和策略
+);
+
+
+ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+// 如果您不设置任何参数，直接调用 executor.initialize()，则采用以下默认值：
+// executor.setCorePoolSize(1); // 危险！核心线程只有1个
+// executor.setMaxPoolSize(Integer.MAX_VALUE); // 极度危险！线程数无上限
+// executor.setKeepAliveSeconds(60); // 空闲线程60秒后回收
+// executor.setQueueCapacity(Integer.MAX_VALUE); // 极度危险！使用无界队列
+// executor.setThreadNamePrefix("SimpleAsyncTaskExecutor-"); 
+// executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy()); // 队列满后抛异常
+```
+
+## 3.java怎么保持线程同步？常用的锁有什么？java锁升级是怎么样的
+
+Java 通过 synchronized、Lock（ReentrantLock）、原子类（CAS）、volatile、并发容器、线程安全工具等实现线程同步；
+
+### 1>常用锁
+
+#### 1. 内置锁（synchronized）
+
+- **特点**：隐式获取和释放锁，可重入，非公平锁（Java 1.6 后默认偏向锁 / 轻量级锁）。
+- **适用场景**：简单同步场景，代码简洁。
+
+#### 2. 显式锁（Lock 接口）
+
+- **ReentrantLock**：可重入锁，支持公平 / 非公平模式，可手动控制锁的获取和释放。
+- **ReentrantReadWriteLock**：读写分离锁，允许多个读线程同时访问，写线程独占访问。
+- **StampedLock**：支持乐观读，性能优于读写锁。
+
+#### 3. 其他锁类型
+
+- **自旋锁**：线程循环尝试获取锁，避免线程上下文切换。
+- **悲观锁 / 乐观锁**：悲观锁（如 `synchronized`）假设冲突一定会发生，乐观锁（如 CAS）假设冲突很少发生。
+- **公平锁 / 非公平锁**：公平锁按请求顺序获取锁，非公平锁允许插队（性能更高）。
+
+### 2>Java 锁升级机制（synchronized 优化）
+
+Java 1.6 对 `synchronized` 进行了优化，引入了**锁升级**机制，从低到高依次为：**偏向锁 → 轻量级锁 → 重量级锁**，以减少锁竞争的开销。
+
+#### 1. 偏向锁
+
+- **适用场景**：只有一个线程访问同步块。
+- **原理**：锁对象的 Mark Word 记录持有锁的线程 ID，后续该线程进入同步块时无需 CAS 操作，直接获取锁。
+- **优势**：消除无竞争情况下的锁获取开销。
+
+#### 2. 轻量级锁
+
+- **适用场景**：多个线程交替访问同步块（无激烈竞争）。
+- **原理**：线程在栈帧中创建锁记录（Lock Record），通过 CAS 将锁对象的 Mark Word 更新为指向锁记录的指针。
+- **自旋**：获取锁失败时，线程会自旋（循环尝试）而非阻塞，减少上下文切换。
+
+#### 3. 重量级锁
+
+- **适用场景**：多个线程同时竞争锁（激烈竞争）。
+- **原理**：升级为操作系统级别的互斥锁（Mutex），失败的线程会被阻塞，进入内核态等待。
+- **劣势**：存在内核态 / 用户态切换开销，性能较低。
+
+#### 锁升级过程总结：
+
+```plaintext
+无锁 → 偏向锁（单线程） → 轻量级锁（多线程交替） → 重量级锁（多线程竞争）
+```
+
+- **注意**：锁升级是不可逆的（只能升级，不能降级），以保证性能。
 
 
 ## 4.synchonized和lock的区别？synchonized优化
@@ -215,26 +307,145 @@ Java 通过 synchronized、Lock（ReentrantLock）、原子类（CAS）、并发
 | 异常释放              | 异常时 **JVM 自动释放锁**                                    | 异常时 **必须在 finally 中手动 unlock**，否则死锁            |
 | 适用场景              | 简单同步场景、代码侵入少                                     | 高并发、需要精细控制（中断、超时、公平、多个等待队列）的复杂并发场景 |
 
+synchronized 的“条件队列”就是对象 Monitor 里的 _WaitSet，所有调用了 obj.wait() 的线程都会被挂到这个队列里等待 notify/notifyAll 唤醒。它是 Java 最原始的条件变量实现，虽然只有一个队列，但已经完全可以实现生产者-消费者、阻塞队列等经典并发模式。
 
-
-无锁 → 偏向锁 → 轻量级锁 → 重量级锁，JVM 自动优化，减少系统调用。
+```text
+新来的线程想抢锁
+      ↓
+   _cxq（争用队列）
+      ↓ (被Park)
+锁释放时，_cxq 头节点出队 → 尝试获取锁
+      ↓ 成功
+持有锁执行...
+      ↓ 调用 wait()
+释放锁 + 放入 _WaitSet + Park (WAITING)
+      ↓ 被 notify/notifyAll
+从 _WaitSet 移到 _EntryList + Unpark
+      ↓
+继续竞争锁（BLOCKED → RUNNABLE）
+```
 
 ## 5.hashmap同步问题，扩容机制，怎么扩容的过程？哈希冲突哪有哪些解决？
 
-1. 开放地址法
-   1. `ThreadLocal`内部的 `ThreadLocalMap`就使用了线性探测法。
-2. 再哈希法
-   1. 准备多个不同的哈希函数。
-3. 建立公共溢出区
-   1. 基本表和溢出表。所有冲突的元素都放入溢出表中。
-4. 链地址法
-   1. **核心思想**：**将数组的每一个元素视为一个桶（bucket）或一个链表的头节点**。所有哈希到同一索引的键值对，都会被放入这个桶对应的链表中。
+HashMap 线程不安全，多线程建议直接用 ConcurrentHashMap；
 
+- JDK1.7 扩容死循环原理：转移元素时采用头插法，多线程时 A 线程挂起后 B 线程完成扩容改变了链表顺序，A 线程恢复后继续头插会形成环形链表，之后 get 时无限循环。JDK1.8 已改尾插法，彻底解决死循环，但仍不线程安全。
+- 常见错误：很多人以为“只有扩容才死循环”，其实日常 put 也可能数据丢失（size++ 被覆盖），或者多个线程同时触发 resize 导致部分桶数组元素丢失。
 
+| 场景                 | 推荐方案（2025 年最新建议）                                  |
+| -------------------- | ------------------------------------------------------------ |
+| 读多写少             | `Collections.synchronizedMap(new HashMap<>())`（过时） 推荐：`ConcurrentHashMap` |
+| 高并发读写           | 直接用 `ConcurrentHashMap`（性能最好）                       |
+| 只读，几乎不修改     | `new HashMap<>()` + 启动时 putAll 完成后再共享               |
+| 需要精确控制并发粒度 | `ConcurrentHashMap` 的分段 putIfAbsent 等操作                |
+
+### 1.扩容机制
+
+JDK1.8 ConcurrentHashMap 当 size ≥ threshold 时触发扩容，支持多线程并发协助扩容，采用“单槽迁移任务”机制，使用 ForwardingNode 标记已迁移槽，保证高并发下读写不阻塞。
+
+深度剖析（带陷阱/踩坑点）：
+
+1. 核心原理：
+   - 扩容前会创建一个 capacity × 2 的新 table
+   - 采用“步长 stride”划分任务，默认每个线程一次处理 16 个槽（transferIndex）
+   - 迁移时对每个槽加锁（synchronized(table[i])），而不是全局锁
+   - 迁移完的槽放一个 ForwardingNode 节点，读线程遇到它会转发到新表，写线程会帮忙迁移（扩容期间写也会协助）
+2. 常见陷阱：很多人说“扩容期间读写全无锁”，错！读确实无锁（volatile + ForwardingNode），但写和迁移是加槽锁的。
+
+### 2.哈希冲突怎么解决
+
+主流两种：开放寻址法（线性探测、二次探测）和拉链法（链表+红黑树）。JDK1.8 HashMap 用拉链法，链表长度≥8且 table≥64 时转红黑树。
+
+深度剖析（带陷阱/踩坑点）：
+
+1. 开放寻址法（ThreadLocal 用）
+   - 线性探测：容易产生聚集（cluster），删除要用墓碑标记，（ThreadLocal 用）
+   - 二次探测：步长是平方，仍然有聚集问题
+   - 再散列：多个哈希函数，实际工程很少用
+2. 拉链法（HashMap 默认）
+   - 优点：简单、易扩展、删除方便
+   - 缺点：极端冲突时退化成 O(n)，JDK1.8 引入红黑树优化尾部冲突
+3. 面试官最爱挖的坑：
+   - “你说红黑树更快，那为什么不一开始就用红黑树？” → 答：链表在冲突少时缓存友好性更好，红黑树节点占内存是链表 2-3 倍。
+   - “树化条件到底是 8 还是 7？” → 严格是 8（binCount >= 8），但源码里是 >7 触发树化，原因是泊松分布下冲突达到 8 的概率已极低（千万分之一）。
+   - 为什么 ThreadLocalMap 不用拉链法而用开放寻址？ → ThreadLocal数量少（几十个），冲突概率极低，开放寻址更快+省内存
+   - 开放寻址负载因子为什么不能太高？ → 超过0.7后聚集效应爆炸，查找退化到O(n)
+   - 删除开放寻址法的元素时为什么不能直接置null？举个例子说明会出什么问题？
+     - 核心原理：查找停止条件只有两种
+       - 找到 key → 返回
+       - 遇到 null（空槽）→ 停止查找，说明不存在 所以中间一旦出现 null，整个后面的探测链就全断了！
 
 ## 6.concurrentHashmap的工作原理，数据结构？
 
-1. 通过 分段锁 + CAS + 无锁读 + 红黑树优化，实现 高并发读写不阻塞。
+JDK8+ ConcurrentHashMap 完全抛弃了 1.7 的 Segment 分段锁，
+
+用 **table 数组 + CAS + synchronized 局部锁** 实现高并发。
+
+ 数据结构：
+
+- 底层仍是 table 数组（volatile Node<K,V>[] table）
+- 单个桶：普通链表 Node → 长度≥8 且 table≥64 转红黑树 TreeNode
+- 扩容时出现 ForwardingNode（hash = -1）占位
+- JDK21 新增 ReservationNode（hash = -3）用于 compute 类操作预占位 核心并发控制：初始化用 CAS(sizeCtl 从 0 → 正数)，put/get 无锁或只锁桶首节点，扩容支持多线程协作。
+
+### 6.1核心要点
+
+#### 1>put 流程（30 秒画完的经典八股）
+
+1. key 为 null → 直接抛 NPE（不允许 null key）
+2. 计算 hash：spread 方法（高16位异或低16位，防低位冲突）
+3. table == null 或对应桶为空 → CAS 插入（tabAt + CAS）
+4. 桶首节点 hash == -1 → 说明正在扩容 → 调用 helpTransfer 帮忙
+5. 否则 synchronized(桶首节点 f) {
+   - 如果仍是 f（没变）→ 链表插入或树插入
+   - 链表长度到 8 → treeifyBin（可能转树） }
+6. addCount(1) → 更新 size，可能触发 transfer() 扩容
+
+#### 5>get 流程（真正无锁读！）
+
+- 全程无锁，靠 volatile 语意
+- 如果遇到 ForwardingNode → 转发到 nextTable 继续查
+- 红黑树走树查找逻辑
+
+#### 6>注意
+
+- 为什么 synchronized 只锁桶首节点而不是整个桶？ → 因为每次扩容迁移后首节点会变，锁住旧首节点无意义；锁新首节点即可保证同一桶串行
+
+- get 为什么可以完全无锁？ → table 数组 volatile + Node 的 next/val volatile + ForwardingNode 转发
+
+- 为什么不允许 null key/value？ → null 被用来表示“槽为空”或“正在扩容”，无法区分
+
+- size() 返回的是精确值吗？ → 不是！是 baseCount + CounterCell[] 分段计数，最终 sum() 可能有微小误差
+
+- JDK21 为什么新增 ReservationNode？ → 解决 computeIfAbsent 并发时重复计算的问题，先占坑
+
+- addCount 里为什么用 CounterCell 分段计数？baseCount 不够吗？
+
+  - baseCount 只适合低并发，高并发下大量线程同时 addCount(1) 会疯狂 CAS 失败重试，性能崩。 CounterCell 是分段计数（类似 LongAdder），每个线程尽量写自己的槽，极大降低竞争，最后 sum() 才汇总。
+
+    - 低并发：baseCount 直接 CAS 更快
+    - 高并发（64线程）：CounterCell 比 baseCount 快 5~10 倍
+
+  - | 项目               | baseCount                             | CounterCell[]                                          |
+    | ------------------ | ------------------------------------- | ------------------------------------------------------ |
+    | 低并发（1~4 线程） | 直接 CAS 累加，最快                   | 有数组创建开销，反而慢                                 |
+    | 高并发（64+ 线程） | 所有线程猛 CAS 一个变量，虚假冲突严重 | 每个线程写自己槽，几乎无竞争，性能爆表                 |
+    | 实现原理           | 单 volatile long，CAS 累加            | 继承 Striped64（LongAdder 原理），分段 + Cell          |
+    | size() 返回值      | 参与最终求和                          | baseCount + 所有 Cell.value 之和（可能有微小误差）     |
+    | 内存开销           | 8 字节                                | 初始 2 个 Cell，之后按 2 倍扩张，每个 Cell 24 字节左右 |
+
+- 如果多个线程同时第一次 put，会不会创建多个 table？
+
+  - sizeCtl < 0 自旋 + CAS 抢 -1 + 双重检查（recheck） + finally 释放 → 100% 只会有一个线程成功创建 table，其余线程要么自旋，要么直接使用已创建好的。
+
+  - | sizeCtl 值       | 含义                                                         | 谁设置的                     | 备注                            |
+    | ---------------- | ------------------------------------------------------------ | ---------------------------- | ------------------------------- |
+    | 0                | 默认值，还没初始化，也没指定初始容量                         | 构造方法                     | 无参构造就是 0                  |
+    | > 0              | ① 未初始化时：表示期望的容量（已取 2 的幂） ② 已初始化后：表示下次扩容阈值 | 构造方法 / initTable 完成    | 构造传 initialCapacity 就放这里 |
+    | -1               | 正在初始化（有线程正在执行 initTable）                       | 抢到初始化权的线程 CAS 进去  | 其他线程看到 -1 就自旋等待      |
+    | < -1             | 正在扩容，低 16 位 = 正在参与扩容的线程数 + 1                | 扩容线程创建/加入时 CAS 修改 | 例如 -3 表示 2 个线程正在扩容   |
+    | -(1 + nThreads)  | 具体计算公式                                                 | transfer() 时动态维护        |                                 |
+    | 特殊值 -2, -3 等 | JDK17+ 扩容戳记（resizeStamp）相关                           | resizeStamp() 生成           | 高 16 位是扩容代数              |
 
 ## 7.泛型是什么？怎么实现的？
 
@@ -277,15 +488,46 @@ public static <T> T max(T a, T b) {
 
 ## 8.怎么理解面向对象？简单聊聊封装、多态、继承
 
-1. 面向对象是模拟现实世界的一种编程范式，通过封装、继承、多态实现高内聚低耦合。
-2. 封装
+### 1.编程范式：面向过程与面向对象
+
+编程范式是程序员编写代码的 “思维方式” 和 “组织逻辑”，不同范式适用于不同场景。
+
+#### 1. 面向过程（Procedure-Oriented Programming, POP）
+
+- **核心思想**：以 “过程”（函数 / 步骤）为中心，把复杂问题拆解为一个个可执行的步骤，按顺序执行。
+- **关注点**：“怎么做”—— 关注实现功能的具体步骤和逻辑。
+- **组织方式**：代码由**数据结构**（变量、数组等）和**函数**（操作数据的步骤）组成，函数是核心单元。
+- **优点**：逻辑清晰、执行高效，适合简单、线性的任务。
+- **缺点**：代码复用性差、维护难度高（需求变更时需修改大量步骤）。
+- **典型代表**：C 语言、早期的 BASIC。
+
+#### 2. 面向对象（Object-Oriented Programming, OOP）
+
+- **核心思想**：以 “对象” 为中心，把现实世界中的事物抽象为对象，对象包含 “属性”（数据）和 “行为”（方法），通过对象之间的交互完成功能。
+- **关注点**：“谁来做”—— 关注对象的职责和交互，而非具体步骤。
+- 三大核心特性
+  - **封装**：将数据和方法封装在对象内部，对外隐藏细节（通过访问修饰符控制），提高安全性和复用性。
+  - **继承**：子类继承父类的属性和方法，实现代码复用，支持 “多态” 的基础。
+  - **多态**：同一行为在不同对象上有不同表现形式（如方法重写、接口实现），提高代码灵活性。
+- **优点**：代码复用性高、易维护、易扩展，适合复杂、大型项目。
+- **缺点**：结构复杂、执行效率略低于面向过程（额外的对象开销）。
+- **典型代表**：Java、Python、C++、C#。
+
+#### 3. 其他常见范式
+
+- **函数式编程**：以 “函数” 为核心，强调纯函数（无副作用）、不可变数据，通过函数组合实现逻辑，如 Haskell、Scala、JavaScript（ES6+）。
+- **声明式编程**：关注 “做什么” 而非 “怎么做”，如 SQL（只写查询逻辑，不关心执行步骤）、HTML/CSS。
+
+面向对象是模拟现实世界的一种编程范式，通过封装、继承、多态实现高内聚低耦合。
+
+### 2.简单聊聊封装、多态、继承
+
+1. 封装
    - 把属性私有化，方法控制访问，保护对象的一致性。
-3. 继承
+2. 继承
    - 子类复用父类代码，避免重复。
-4. 多态
+3. 多态
    - 统一接口，不同实现，运行时决定调用谁。
-
-
 
 ## 9.Integer和Int的区别？什么时候用Integer？new Integer(1)会不会从缓存中取？
 
