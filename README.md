@@ -917,6 +917,17 @@ p.name = "Tom"; // 直接操作字段
 >
 > 协程：用户态，轻量协作式，适合 I/O 密集型，单线程高并发（10w+），切换快（<1μs）、栈小（几KB），但不能利用多核。
 
+| 排名 | 场景                           | 传统多线程写法              | 2024~2025 推荐写法（协程/虚拟线程）       | 真实占比 |
+| ---- | ------------------------------ | --------------------------- | ----------------------------------------- | -------- |
+| 1    | 异步发日志 / 埋点 / 审计       | @Async + TaskExecutor       | 虚拟线程（几乎零改造）                    | 90%      |
+| 2    | 异步发送邮件 / 短信 / 站内信   | @Async                      | 虚拟线程                                  | 85%      |
+| 3    | 定时任务（Corn / 动态定时）    | @Scheduled(fixedRate)       | 虚拟线程 + ScheduledExecutor              | 80%      |
+| 4    | 批量导入 / 导出（Excel、CSV）  | 多线程分片 + CountDownLatch | 虚拟线程 StructuredTaskScope（JDK21）     | 75%      |
+| 5    | 高并发对外 HTTP 接口（10w+）   | Tomcat + 线程池             | Netty + WebFlux 或 虚拟线程               | 60%      |
+| 6    | 消息队列消费（RocketMQ/Kafka） | @RocketMQMessageListener    | 虚拟线程消费（2024 年新趋势）             | 50%      |
+| 7    | 限流熔断降级（Sentinel）       | 内部就是线程池              | 虚拟线程 + Resilience4j                   | 40%      |
+| 8    | 网关层（Spring Cloud Gateway） | Netty + Reactor             | 已经默认协程（Reactor），未来可换虚拟线程 | 100%     |
+
 ## 23、基础类和继承类
 
 | 题目                      | 答案                                                         |
