@@ -1107,6 +1107,30 @@ public class Singleton2 {
 }
 // 优点：延迟加载 + 线程安全 + 性能高 + 防反射 + 防序列化破坏
 // 缺点：没有（真的没有）
+public class Singleton {
+    // 1. 私有构造，防止外部 new
+    private Singleton() {
+        // 可选：防反射破坏
+        if (Holder.INSTANCE != null) {
+            throw new RuntimeException("单例已被破坏！");
+        }
+    }
+
+    // 2. 静态内部类持有唯一实例
+    private static class Holder {
+        private static final Singleton INSTANCE = new Singleton();
+    }
+
+    // 3. 对外提供获取方法
+    public static Singleton getInstance() {
+        return Holder.INSTANCE;
+    }
+
+    // 业务方法
+    public void doSomething() {
+        System.out.println("我是单例：" + this.hashCode());
+    }
+}
 ```
 ### 3. 枚举单例（Effective Java 作者推荐，最强防破解版）
 ```java
@@ -1204,6 +1228,14 @@ instance = new Singleton();
 **“那你为什么不推荐 DCL？”** 
 
 → 因为容易写错（忘 volatile 就是事故），静态内部类写法更简单、更安全、性能一样高。
+
+为什么不直接用 synchronized 方法？ → 性能差 5~10 倍
+
+为什么不直接用静态内部类？ → 它才是最优解，DCL 基本被淘汰
+
+那为什么还有人用 DCL？ → 历史遗留 + 面试装逼专用
+
+volatile 能不能去掉？ → 不能！去掉会半初始化问题
 
 ## 32、能不能只在父类写一次 hashCode() 和 equals()
 
@@ -1625,6 +1657,110 @@ HashMap.put("hello", PRESENT)   ← 真正执行的是这一步
 
 - volatile 保证 可见性 + 禁止指令重排序，不保证原子性 
 - 底层：内存屏障（Memory Barrier） + Lock 前缀
+
+第 X 题：volatile + happens-before + 双检锁单例终极八股（2025 阿里/字节/美团/拼多多/腾讯 P8~P9 必杀，背完直接封神）
+
+标准答案（30 秒现场背完秒杀版）
+
+**volatile 两大核心作用（倒背如流）**  
+1. 保证可见性：一个线程修改 volatile 变量后，其他线程立刻看到最新值  
+2. 禁止指令重排序：写 volatile 前后的代码不会被 JVM/CPU 乱序执行  
+
+**happens-before 经典 8 条规则（重点背第 5 条）**  
+
+| 序号 | 规则名称               | 官方原文（简版） + 通俗翻译                                  | 生产中最常见的使用场景（必须会举例子）                       |
+| ---- | ---------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 1    | 程序顺序规则           | 一个线程内的每个操作，happens-before 于该线程中任意后续操作  | 普通单线程代码天然满足，不用管                               |
+| 2    | 监视器锁规则（锁规则） | 对一个锁的解锁，happens-before 于后续对这个锁的加锁          | synchronized 块：unlock → 后续 lock                          |
+| 3    | volatile 变量规则      | 对 volatile 字段的写，happens-before 于后续对这个字段的任意读 | 双检锁单例、状态标志 flag、DCL                               |
+| 4    | 传递性规则             | 如果 A hb B，且 B hb C，那么 A hb C                          | 组合使用，把前面的规则串起来                                 |
+| 5    | 线程 start 规则        | Thread.start() 调用，happens-before 于该线程内的任意操作     | 主线程准备好数据 → 子线程 start → 子线程安全读数据           |
+| 6    | 线程 join 规则         | 线程 A 执行 join() 成功返回，happens-before 于主线程后续操作 | 主线程等子线程跑完再继续（经典生产者-消费者）                |
+| 7    | 线程中断规则           | thread.interrupt() 调用，happens-before 于被中断线程检测到中断发生 | 优雅停线程：主线程 interrupt → 子线程 isInterrupted() 能看到 |
+| 8    | 对象终结规则           | 对象的构造函数执行结束，happens-before 于它的 finalize() 方法执行 | 基本没人用（finalize 都快被埋了）                            |
+
+**双检锁单例正确写法（2025 终极标准答案）**
+
+```java
+public class Singleton {
+    // 1. 必须加 volatile！禁止指令重排序
+    private static volatile Singleton instance;
+
+    private Singleton() {
+        // 防止反射破坏单例
+        if (instance != null) {
+            throw new RuntimeException("单例已被破坏！");
+        }
+    }
+
+    public static Singleton getInstance() {
+        if (instance == null) {                    // 1. 第一次检查（无锁）
+            synchronized (Singleton.class) {      
+                if (instance == null) {            // 2. 第二次检查（加锁）
+                    instance = new Singleton();    // 3. 关键！这行有 3 个步骤
+                }
+            }
+        }
+        return instance;
+    }
+}
+```
+
+**为什么必须加 volatile？（面试官必追问，背完加薪）**
+
+`instance = new Singleton()` 实际上分 3 步：
+1. 分配内存空间
+2. 在内存里调用构造方法（初始化字段）
+3. 把 instance 引用指向这块内存（instance ≠ null）
+
+**没有 volatile 时，可能发生指令重排序：1 → 3 → 2**
+
+结果：
+- 线程 A 执行到第 3 步：instance 已经指向内存，但对象还没构造完（字段还是默认值）
+- 线程 B 判断 `instance != null`，直接返回一个“半成品”对象 → 各种 NPE / 崩溃！
+
+**加了 volatile 后**：
+- JVM 插入内存屏障，强制 1 → 2 → 3 顺序执行
+- 结合 happens-before 规则：写 volatile happens-before 后续读 volatile
+- 线程 B 读到 instance 时，保证一定看到一个完全构造好的对象
+
+**2025 年更推荐的写法（大厂主流，代码更优雅）**
+
+```java
+// 1. 静态内部类（最推荐！利用类加载机制天然线程安全）
+public class Singleton {
+    private Singleton() {}
+
+    private static class Holder {
+        private static final Singleton INSTANCE = new Singleton();
+    }
+
+    public static Singleton getInstance() {
+        return Holder.INSTANCE;
+    }
+}
+
+// 2. 枚举单例（Effective Java 推荐，防反射、防序列化）
+public enum Singleton {
+    INSTANCE;
+    public void doSomething() { }
+}
+```
+
+**各种单例写法对比表（直接上黑板）**
+
+| 写法              | 懒加载 | 线程安全 | 防反射 | 防序列化 | 性能 | 推荐度 |
+| ----------------- | ------ | -------- | ------ | -------- | ---- | ------ |
+| 饿汉式            | 否     | 是       | 否     | 否       | 高   | 3星    |
+| 静态内部类        | 是     | 是       | 是     | 是       | 高   | 5星    |
+| 双检锁 + volatile | 是     | 是       | 否     | 否       | 高   | 4星    |
+| 枚举              | 否     | 是       | 是     | 是       | 高   | 5星    |
+
+**追问终极杀招**
+
+* volatile 能保证原子性吗？ → 不能！i++ 仍然不安全
+* happens-before 是内存屏障吗？ → 不是！它是 JMM 抽象规则，内存屏障是实现手段
+* 你在生产用过双检锁吗？ → 没有，用静态内部类或枚举更安全
 
 # Spring
 
@@ -2325,8 +2461,6 @@ MySQL（InnoDB）用 **B+ 树** 做索引因为：
 
 > **type = “访问方式”** → **越靠前越好** **Extra = “额外操作”** → **有 Using filesort / Using temporary 就得优化！**
 
-------
-
 ### type 字段：**访问类型排名（从优到劣）**
 
 | type 值 | 含义                       | 性能等级 | 说明           |
@@ -2354,6 +2488,43 @@ MySQL（InnoDB）用 **B+ 树** 做索引因为：
 | Using temporary          | **临时表**（GROUP BY / DISTINCT） | 必须优化！       |
 | Using index condition    | 索引下推（ICP）                   | 好（MySQL 5.6+） |
 | Impossible WHERE         | WHERE 条件永远为假                | 逻辑错误         |
+
+## 15、MySQL 慢查询怎么定位？
+
+####  1. 开启慢查询日志
+
+MySQL 提供慢查询日志功能，记录执行时间超过阈值的 SQL：
+
+```sql
+-- 临时开启（重启后失效）
+SET GLOBAL slow_query_log = ON;           -- 开启慢查询日志
+SET GLOBAL long_query_time = 1;           -- 阈值：执行时间超过1秒的SQL会被记录
+SET GLOBAL slow_query_log_file = '/var/lib/mysql/slow.log'; -- 日志文件路径
+```
+
+## 16、执行计划看懂了吗？举个你优化过的索引例子
+
+执行计划通过 `EXPLAIN` 命令生成，用于分析 SQL 的执行方式（如是否使用索引、表连接方式等）。核心字段解读：
+
+#### 1. 关键字段说明
+
+| 字段            | 含义                                                         |
+| --------------- | ------------------------------------------------------------ |
+| **id**          | 查询执行顺序（数字越大越先执行，相同则按顺序执行）           |
+| **select_type** | 查询类型（SIMPLE：简单查询；SUBQUERY：子查询；DERIVED：派生表；JOIN：连接查询） |
+| **type**        | 表访问类型（性能从好到差：`system` > `const` > `eq_ref` > `ref` > `range` > `ALL`） |
+| **key**         | 实际使用的索引（NULL 表示未使用索引）                        |
+| **rows**        | MySQL 预估需要扫描的行数（数值越小越好）                     |
+| **Extra**       | 额外信息（`Using index`：使用覆盖索引；`Using where`：过滤数据；`Using filesort`：文件排序，性能差；`Using temporary`：使用临时表，性能差） |
+
+#### 2. 执行计划分析示例
+
+```sql
+EXPLAIN SELECT * FROM orders WHERE user_id = 100 AND order_date > '2024-01-01';
+```
+
+- 若 `type` 为 `ALL`，`key` 为 `NULL`：表示全表扫描，未使用索引。
+- 若 `Extra` 出现 `Using filesort`：表示需要额外排序，需优化。
 
 # 架构和设计模式
 
