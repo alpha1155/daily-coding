@@ -357,6 +357,43 @@ synchronized 的“条件队列”就是对象 Monitor 里的 _WaitSet，所有�
 继续竞争锁（BLOCKED → RUNNABLE）
 ```
 
+### 1>ReentrantLock 底层怎么实现的（AQS）？
+
+- ReentrantLock 是基于 AQS 实现的显式锁，必须手动 unlock，底层通过 volatile state + CAS + CLH 阻塞队列实现。 
+- 它支持公平/非公平、可中断、超时、Condition 条件等待等高级特性。 
+- AQS 的核心是：一个 volatile int state + 一个双向 CLH 队列，所有 JUC 锁工具类底层都是它。 
+- 普通同步用 synchronized，需要高级特性时才用 ReentrantLock。
+
+ReentrantLock 的底层完全依赖一个叫 **AQS（AbstractQueuedSynchronizer）** 的神级框架。
+
+AQS 是 Java 并发包（JUC）的基石，几乎所有锁（ReentrantLock、CountDownLatch、Semaphore、ReadWriteLock 等）底层都是它。
+
+#### AQS 核心组成（背下来）
+
+| 组成部分                   | 作用                                                         |
+| -------------------------- | ------------------------------------------------------------ |
+| volatile int state         | 锁状态：0=无锁，>0=已加锁，重入时递增（ReentrantLock 就是靠它实现重入） |
+| CLH 同步队列（双向链表）   | 阻塞线程排队的地方，头节点是当前持有锁的线程                 |
+| Condition 队列（单向链表） | Condition.await() 时线程会进入这个队列（可以有多个）         |
+| CAS 操作                   | 所有状态修改都靠 Unsafe.compareAndSwapInt 来保证原子性       |
+
+#### ReentrantLock 加锁全过程（非公平锁默认流程，面试最常问）
+
+```
+ReentrantLock lock = new ReentrantLock();  // 默认非公平锁
+lock.lock();
+```
+
+1. 尝试 CAS 把 state 从 0 → 1
+   - 成功 → 直接拿到锁，设置当前线程为 exclusiveOwnerThread，结束
+   - 失败 → 说明已经有线程占着锁
+2. 检查当前持有锁的线程是不是自己（支持重入）
+   - 是 → state++，直接返回
+3. 以上都不行 → 创建一个 Node，把当前线程包装进去
+   - 通过 CAS 把这个 Node 加入 CLH 队列尾部（尾插法）
+   - 调用 LockSupport.park(this) 把当前线程挂起（真正阻塞）
+4. 被 unlock 的线程会通过 LockSupport.unpark() 唤醒队列头节点的下一个线程
+
 ## 5.hashmap同步问题，扩容机制，怎么扩容的过程？哈希冲突哪有哪些解决？
 
 HashMap 线程不安全，多线程建议直接用 ConcurrentHashMap；
@@ -406,6 +443,8 @@ JDK1.8 ConcurrentHashMap 当 size ≥ threshold 时触发扩容，支持多线�
      - 核心原理：查找停止条件只有两种
        - 找到 key → 返回
        - 遇到 null（空槽）→ 停止查找，说明不存在 所以中间一旦出现 null，整个后面的探测链就全断了！
+
+
 
 ## 6.concurrentHashmap的工作原理，数据结构？
 
@@ -560,6 +599,7 @@ public static <T> T max(T a, T b) {
    - 子类复用父类代码，避免重复。
 3. 多态
    - 统一接口，不同实现，运行时决定调用谁。
+   - 实现机制
 
 ## 9.Integer和Int的区别？什么时候用Integer？new Integer(1)会不会从缓存中取？
 
@@ -1619,6 +1659,106 @@ HashMap.put("hello", PRESENT)   ← 真正执行的是这一步
 1. “Java 序列化就是把对象转成字节数组，用于网络传输、持久化、深拷贝，是分布式系统的基石。”
 2. “反序列化最大风险是 serialVersionUID 不一致和安全漏洞，生产环境必须显式声明 serialVersionUID，严禁反序列化不可信数据。”
 3. “2025 年大厂趋势：**新项目一律禁止用 Java 原生序列化，全部改用 JSON（FastJSON2/Jackson）或 Protostuff**，性能更高、更安全、跨语言。”
+
+## 45、Java基础
+
+| 类别           | 内容                                                         |
+| -------------- | ------------------------------------------------------------ |
+| **基本类型**   | `byte, short, int, long, float, double, char, boolean`       |
+| **引用类型**   | 类、接口、数组、枚举、注解                                   |
+| **集合接口**   | `List, Set, Queue, Deque, Map`                               |
+| **常用集合类** | `ArrayList, LinkedList, HashSet, TreeSet, HashMap, LinkedHashMap, ConcurrentHashMap` 等 |
+
+### 1.面向对象编程的特性？
+
+封装、继承、多态
+
+### 2.四大修饰符和作用范围
+
+- public
+  - 当前类、同一包、不同包子类、其他包
+- protected
+  - 当前类、同一包、同一包子类
+- default
+  - 当前类、同一包
+- private
+  - 当前类
+
+### 3.基础数据类型
+
+| 类型    | 占用字节    | 占用位数 | 默认值   | 包装类    |
+| ------- | ----------- | -------- | -------- | --------- |
+| byte    | 1           | 8        | 0        | Byte      |
+| short   | 2           | 16       | 0        | Short     |
+| int     | 4           | 32       | 0        | Integer   |
+| long    | 8           | 64       | 0L       | Long      |
+| float   | 4           | 32       | 0.0f     | Float     |
+| double  | 8           | 64       | 0.0d     | Double    |
+| char    | 2           | 16       | '\u0000' | Character |
+| boolean | 1（理论上） | 无明确   | false    | Boolean   |
+
+### 4.引用类型
+
+类、接口、数组、枚举、注解
+
+Class, Interface, Array, Enum, Annotation
+
+### 5.主要接口
+
+| 接口       | 描述                 | 有序           | 是否重复   | 是否允许Null |
+| ---------- | -------------------- | -------------- | ---------- | ------------ |
+| Collection | 所有集合的根接口     | -              | -          | -            |
+| List       | 有序集合             | 是（插入顺序） | 是         | 是           |
+| Set        | 无序集合，不允许重复 | 否             | 否         | 部分允许     |
+| Queue      | 队列                 | 是             | 是         | 是           |
+| Deque      | 双端队列             | 是             | 是         | 是           |
+| Map        | 键值对映射           | 否             | 键否，值是 | 部分允许     |
+
+#### 1 >List
+
+1. ArrayList-动态数组
+2. LinkedList-双向链表
+3. Vector-动态数组-线程安全
+   1. 过时，性能差
+4. CopyOnWriteArrayList-写时复制数组
+   1. 读多写少并发场景
+
+#### 2>Set
+
+| 类              | 底层结构      | 特点                                       |
+| --------------- | ------------- | ------------------------------------------ |
+| `HashSet`       | 哈希表        | 无序，快速，允许 1 个 null                 |
+| `LinkedHashSet` | 哈希表 + 链表 | 保持插入顺序                               |
+| `TreeSet`       | 红黑树        | 有序（自然顺序或 Comparator），不允许 null |
+
+#### 3>Queue
+
+| 类              | 特点                              |
+| --------------- | --------------------------------- |
+| `PriorityQueue` | 堆结构，优先级队列（最小/最大堆） |
+| `ArrayDeque`    | 数组实现双端队列，推荐使用        |
+
+#### 4>Map
+
+| 类                | 底层数据结构     | 特点                                            |
+| ----------------- | ---------------- | ----------------------------------------------- |
+| HashMap           | 数组+链表/红黑树 | 无序，允许 1 个 null 键，多个 null 值           |
+| LinkedHashMap     | 哈希表和链表     | 保持插入顺序或访问顺序（LRU）                   |
+| TreeMap           | 红黑树           | 键有序（自然顺序或 Comparator），不允许 null 键 |
+| HashTable         | 哈希表           | 过时，不允许 null,性能差                        |
+| ConcurrentHashMap | 分段锁/节点锁    | 高并发场景                                      |
+| Properties        | HashTable子类    | 常用于配置文件                                  |
+
+- 所有集合类都是 **引用类型**，存储在堆中。
+
+- 基本类型可以通过 **自动装箱/拆箱** 与包装类互转：
+
+  ```java
+  Integer i = 10;     // 自动装箱
+  int j = i;          // 自动拆箱
+  ```
+
+- 集合操作泛型推荐使用包装类，避免 `NullPointerException`。
 
 # JVM
 
