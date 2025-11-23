@@ -30,7 +30,32 @@ class Solution {
     public static void main(String[] args) {
         Solution sol = new Solution();
         String s = "001101";
-        int res = sol.numberOfSubstrings(s);
+        int res = sol.maxSumDivThree([2,8,32,38,13,40]);
         System.out.println(res); // Expected output: 12
+    }
+    
+    public int maxSumDivThree(int[] nums) {
+        int minOne = 10000, secOne = 10000, minTwo = 10000, secTwo = 10000, len = nums.length, result = 0;
+        for (int n : nums) {
+            result += n;
+            if (n % 3 == 1) {
+                if (minOne >= n) {
+                    secOne = minOne;
+                    minOne = n;
+                }
+                // minOne = Math.min(minOne, n);
+            } else if (n % 3 == 2) {
+                if (minTwo >= n) {
+                    secTwo = minTwo;
+                    minTwo = n;
+                }
+                // minTwo = Math.min(minTwo, n);
+            }
+        }
+        if (result % 3 == 2)
+            result -= Math.min(minOne + secOne, minTwo);
+        else if (result % 3 == 1)
+            result -= Math.min(minTwo + secTwo, minOne);
+        return result;
     }
 }
