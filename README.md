@@ -341,6 +341,23 @@ Java 1.6 对 `synchronized` 进行了优化，引入了**锁升级**机制，从
 
 synchronized 的“条件队列”就是对象 Monitor 里的 _WaitSet，所有调用了 obj.wait() 的线程都会被挂到这个队列里等待 notify/notifyAll 唤醒。它是 Java 最原始的条件变量实现，虽然只有一个队列，但已经完全可以实现生产者-消费者、阻塞队列等经典并发模式。
 
+ 偏向锁 (Biased Locking)
+
+- **适用场景**：绝大多数时候都只有**同一个**线程在访问同步块，几乎没有并发。
+- **原理**：JVM 在对象头中记录第一次获取锁的线程 ID。该线程后续进入同步块时，无需任何同步操作，只做简单的 ID 检查即可。开销极低。
+- **升级条件**：当有**其他**线程尝试获取这个锁时，偏向锁失效，升级到轻量级锁。
+
+轻量级锁 (Lightweight Locking)
+
+- **适用场景**：线程是**交替地**进入同步块（例如线程 A 刚释放，线程 B 就进去了），竞争不激烈。
+- **原理**：JVM 使用 **CAS (Compare-And-Swap)** 操作尝试将对象头中的锁指针指向当前线程的栈帧。如果失败，线程会进入**自旋**状态（循环等待），而不是立即阻塞。
+- **升级条件**：如果自旋多次仍然获取不到锁（说明锁被占用的时间较长），或者自旋的线程数过多，则升级为重量级锁。
+
+重量级锁 (Heavyweight Locking)
+
+- **适用场景**：并发竞争激烈，多个线程同时请求锁，且锁被持有的时间较长。
+- **原理**：这是传统的互斥锁机制。未抢到锁的线程会被操作系统**阻塞**，导致线程上下文切换，开销最大。
+
 ```text
 新来的线程想抢锁
       ↓
@@ -642,12 +659,12 @@ List 只能用 Integer，不能用 int，是因为 Java 泛型只接受引用类
 
 ## 12.什么是乐观锁、悲观锁？区别是什么呢？原理呢？
 
-**乐观锁**：读不锁、写带版本，提交再比对，撞了重试。
+**乐观锁**：在操作数据时**不会**立即加锁。它会在提交更新时，检查在此期间数据是否被其他线程修改过。
 
-**悲观锁**：读就上排他锁，事务没结束别人只能排队。
+**悲观锁**：在进行任何数据操作**之前**，都会先获取锁，确保在整个数据处理过程中，没有人能够修改它。
 
-- **悲观锁**：数据库 **行锁（row lock）**，InnoDB 的 **next-key lock**
-- **乐观锁**：**CAS 算法**（Compare And Swap），CPU 指令 cmpxchg
+- 乐观锁：CAS操作、版本号机制（如数据库乐观锁）、Atomic系列类、StampedLock乐观读。
+- 悲观锁：synchronized、ReentrantLock、数据库行锁。
 
 
 
@@ -748,7 +765,13 @@ TERMINATED
 
 > synchronized 是 JVM 内置锁，自动释放，基于 monitorenter/monitorexit；Lock 是显式锁（ReentrantLock），需手动 unlock，支持公平锁、条件等待、tryLock 和中断。
 
+Synchronized
 
+- 是JAVA实现线程同步最基础最主要的关键字，是一种内置的锁机制，属于悲观锁的范畴，主要保证同一时期，只有一个线程能执行特定代码块和方法
+
+Lock
+
+- `Lock` 接口定义了更广泛的锁定操作。它提供了一种获取锁、尝试获取锁、可中断地获取锁以及释放锁的方法，并且提供了比 `synchronized` 更多的控制维度。
 
 ## 17、为什么线程多的时候要使用锁而不是CAS？
 
@@ -1429,7 +1452,7 @@ public boolean equals(Object o) {
 | 对象的 clone() 方法              | 浅拷贝               | 默认只复制引用             |
 | new 对象 + 手动赋值              | 可深拷贝             | 最常用                     |
 | 序列化 + 反序列化                | 深拷贝               | 最彻底（连 final 都行）    |
-| Apache BeanUtils.copyProperties  | 浅拷贝               | 常用但很多人误以为是深拷贝 |
+| Apache BeanUtils.copyProperties  | 浅拷贝Conditional    | 常用但很多人误以为是深拷贝 |
 | JSON 序列化（如 FastJSON、Gson） | 深拷贝               | 简单粗暴，生产常用         |
 
 >“浅拷贝只复制对象和引用地址，引用字段共用同一块内存，改一个另一个也变； 深拷贝递归复制所有层级，新对象和原对象完全独立，互不影响。 Java 中 clone() 默认是浅拷贝，真正深拷贝常用序列化或手动递归实现。”
@@ -1760,6 +1783,187 @@ Class, Interface, Array, Enum, Annotation
 
 - 集合操作泛型推荐使用包装类，避免 `NullPointerException`。
 
+
+
+## 46、JAVA怎么保证线程安全？
+
+需要三个属性，**可见性、有序性、原子性**
+
+1. 同步机制
+   1. Synchronized
+   2. lock
+2. volatile
+   1. 可见性
+   2. 有序性
+3. CAS + 原子类
+   1. 保证无锁原子操作
+4. 线程安全数据结构
+5. 不可变对象设计
+6. 线程隔离技术
+   1. ThreadLocal
+
+
+
+## 47、ThreadLocal的原理？注意点
+
+并发编程的一个工具类，实现让每个线程都有自身独立的变量副本，从而线程之间的数据隔离的机制。
+
+注意内存泄漏风险，适用于线程隔离数据场景
+
+ThreadLocal.get()先获取当前线程的ThreadLocalMap，以当前ThreadLocal对象为key进行存取。ThreadLocalMap使用开放地址法解决哈希冲突。[ThreadLocal数量少（几十个），冲突概率极低，开放寻址更快+省内存]
+
+- 计算初始位置i
+- 从i开始线性探测
+  - 遇到key匹配：返回value
+  - 遇到key=null：调用expungeStaleEntry(i)清理，**但继续从i+1位置探测**
+  - 遇到null槽：返回null（未找到）
+
+内存泄漏
+
+- 内存泄漏因ThreadLocalMap的key是弱引用，ThreadLocal对象被回收后key为null，但value强引用无法回收，需手动remove()。
+
+弱引用key确保当ThreadLocal外部强引用消失时，ThreadLocal对象本身可被GC回收，降低内存泄漏严重性。
+
+## 48、事务中的一致性和分布式系统中的一致性是一样的吗
+
+考察点：ACID特性，CAP定理，概念辨析能力
+
+不一样。事务ACID中的C（Consistency）指数据在事务执行前后必须满足所有预定义的业务规则和完整性约束（如外键、唯一索引），是数据库内部的“状态正确性”。而分布式系统中的C（Consistency）指在分布式系统的多个节点之间，数据在同一时刻的“副本一致性”，即所有节点在同一时间点看到的数据是相同的。
+
+## 49、Array的底层结构
+
+在Java中，Array的底层是一块连续的内存空间，存储相同类型的元素。通过索引直接计算内存偏移量访问元素，时间复杂度O(1)。数组长度固定，创建后不可改变。
+
+数组是连续内存块，通过索引直接寻址，长度固定。
+
+## 50、HashMap TreeMap的底层原理，是否安全
+
+HashMap是基于数组+链表/红黑树实现的无序键值对数据集合；O(1)
+
+TreeMap是基于红黑树实现的有序键值对集合；查找O(log n)
+
+HashMap为什么选择红黑树而不是AVL树？（红黑树旋转次数少，插入删除性能更好）
+
+LinkedHashMap继承自HashMap，在HashMap数组+链表/红黑树的基础上，额外维护了一个贯穿所有元素的双向链表。这个链表可以保持元素的插入顺序或访问顺序，而HashMap不保证任何遍历顺序。
+
+## 
+
+## 51、不同JDK的特性
+
+- **JDK8 Lambda原理**：基于invokedynamic指令，运行时生成匿名类，非语法糖而是编译器魔法
+  - Lambda原理：基于invokedynamic指令，运行时动态生成匿名类，非简单的语法糖
+  - Stream API (java.util.stream) 为集合数据处理提供了一种全新且强大的方式，支持链式操作和并行处理。 
+- **JDK11 ZGC原理**：基于染色指针的并发垃圾收集器，暂停时间不超过10ms，适用大内存
+- **JDK17密封类原理**：通过sealed和permits关键字在编译期限制类继承，增强领域建模能力
+- **JDK21虚拟线程原理**：用户态线程，由JVM调度而非操作系统，大幅提升并发性能
+
+
+
+
+
+## 52、ConcurrentHashMap
+
+JDK7采用分段锁（Segment），JDK8+改为数组节点锁（Node）
+
+基于数组+链表/红黑树的结构，通过CAS+Synchronized 实现分段锁，支持高并发读写，通过sizeCtl控制扩容，transfer方法多线程协调数据迁移，是线程安全和高性能的HashMap的实现
+
+### 为什么JDK8放弃分段锁改用synchronized？
+
+（synchronized在JDK6后性能大幅提升，锁粒度更细，内存开销更小）
+
+### ConcurrentHashMap在扩容时如何保证线程安全？
+
+（通过ForwardingNode标记迁移节点，多线程协作迁移，每个线程处理不同区间）
+
+### CAS
+
+Compare-And-Swap比较并交换，乐观锁机制，失败时重试
+
+- **数组初始化**：初始化table时使用CAS保证只初始化一次
+- **空桶插入**：向空桶插入头节点时使用CAS，避免锁开销
+  - 空桶插入只有单一状态变更（null→node），CAS可原子完成。非空桶操作涉及多步骤（遍历、比较、插入），需要synchronized保证原子性。
+- **计数器更新**：size计数使用CounterCell数组+CAS，避免单一计数器瓶颈
+
+#### 自旋
+
+CAS在值不匹配时自旋，默认无限重试但实际受竞争程度限制。
+
+#### 伪共享问题
+
+核心原因在于**伪共享（False Sharing）问题导致的性能瓶颈**。
+
+AtomicLong 的局限性：伪共享
+
+`AtomicLong` 使用 CAS 来更新一个单独的、全局的 `long` 变量。在高并发场景下，即使不同的线程在不同 CPU 核心上运行，它们频繁地争抢同一个内存地址（`AtomicLong` 实例）的修改权。
+
+这会导致**伪共享**
+
+CounterCell避免单一AtomicLong的缓存行伪共享和CAS竞争瓶颈。**优先尝试低开销的全局更新（`baseCount`），冲突时再切换到高开销但能有效避免伪共享的分散式更新（`CounterCell` 数组）。**
+
+1. **数据结构**：`ConcurrentHashMap` 内部维护一个 `CounterCell[]` 数组 (`cells`)。
+2. **分散热点**：当需要更新大小时，系统会根据当前线程的哈希值，将操作分散到 `cells` 数组的不同位置。这大大降低了多个线程争抢同一个内存位置的概率。
+3. **避免伪共享**：`CounterCell` 类被特殊设计过，它内部包含 15 个 `long` 类型的填充字段，将实际存储计数的 `value` 字段“隔离”在自己的缓存行中。这些填充字段占据了额外的 120 字节（`8 bytes * 15`），确保一个 `CounterCell` 实例独占一个或多个缓存行，从而避免与其他变量产生伪共享。
+   1. `ConcurrentHashMap` 中 `CounterCell[]` 数组的长度（`cells.length`）是动态调整的，取决于 CPU 核心数和并发竞争程度：
+      1. **懒初始化**：数组最初是 `null`。
+      2. **动态扩容**：当并发冲突发生时，数组会被初始化，通常从一个较小的长度开始（例如 2 或 4）。随着冲突的增加，数组会进行两倍扩容。
+      3. **最大长度限制**：`cells` 数组的长度不会无限增长。它通常最大限制为**CPU 核心数的两倍**（由源码中的常量控制，例如 64 个槽位）。
+4. **汇总**：当需要获取总大小时（调用 `size()` 方法），它会将 `cells` 数组中所有 `CounterCell` 的值以及一个基准值 `baseCount` 加起来。
+
+## 53、AtomicInteger
+
+对JAVA标准类型int的原子封装
+
+核心特点：
+
+- 线程安全和原子性
+  - `AtomicInteger` 确保了所有操作（如增加、减少、设置新值）都是**原子性**的，这意味着它们要么完全执行成功，要么完全不执行，不会出现中间状态。
+- 基于CAS实现
+  - 它通过硬件级别的 CAS 指令保证操作的原子性，避免了线程阻塞和上下文切换的开销。
+
+## 54、内存溢出和内存泄漏
+
+1. 内存溢出 (Out Of Memory, OOM)
+
+内存溢出指的是程序在申请内存时，**没有足够的内存空间**供其使用。JVM 抛出著名的 `java.lang.OutOfMemoryError` 错误。
+
+特点：
+
+- **结果**：应用程序彻底崩溃，JVM 无法继续运行。
+- **原因**：是**物理空间的不足**。可能是堆内存（Heap Space）不足、栈内存（Stack Space）不足、元空间（Metaspace）不足等。
+- **通常表现**：
+  - `java.lang.OutOfMemoryError: Java heap space`（堆内存不足，最常见）。
+  - `java.lang.OutOfMemoryError: PermGen space` 或 `Metaspace`（永久代或元空间不足，类定义过多）。
+  - `java.lang.OutOfMemoryError: Unable to create new native thread`（创建线程过多，导致栈内存不足）。
+
+示例场景：
+
+分配了一个过大的数组，或者加载了过多的图片、视频等大型对象，超出了 JVM 堆内存的限制。
+
+2. 内存泄漏 (Memory Leak)
+
+内存泄漏指的是程序在运行过程中，分配的内存**无法被 JVM 的垃圾回收器（GC）回收**，即使这块内存已经不再被程序使用。
+
+特点：
+
+- **结果**：程序可以继续运行，但随着时间的推移，**可用的内存越来越少**。这是一个**累积过程**。
+- **原因**：是**垃圾回收机制失效**，GC 认为对象仍然“可达”（reachable），有强引用指向它，但实际上程序代码已经不再需要使用它了。
+- **最终影响**：内存泄漏**最终**会导致内存溢出。泄漏到一定程度，剩余的可用内存耗尽，就会触发 OOM。
+
+示例场景：
+
+- **ThreadLocal 误用**：如前所述，忘记调用 `remove()` 导致 Value 对象无法释放。
+- **静态集合类**：将对象放入一个静态的 `ArrayList` 或 `HashMap` 中，但从不移除，导致对象常驻内存。
+- **未关闭的连接**：数据库连接、网络连接、文件流等未正确关闭，导致相关缓冲区和对象无法释放。
+
+核心区别总结
+
+| 特性     | 内存溢出 (OOM)               | 内存泄漏 (Memory Leak)           |
+| :------- | :--------------------------- | :------------------------------- |
+| **定义** | 没有足够的内存可用           | 内存无法被 GC 回收               |
+| **现象** | 立即崩溃，抛出 `Error`       | 运行缓慢，内存逐渐耗尽           |
+| **原因** | 物理空间不足                 | 存在无效但未释放的引用           |
+| **关系** | 内存泄漏的**结果**是内存溢出 | 内存溢出可能是内存泄漏**导致**的 |
+
 # JVM
 
 ## 1.谈谈多态，多态的底层原理
@@ -1902,6 +2106,30 @@ public enum Singleton {
 * volatile 能保证原子性吗？ → 不能！i++ 仍然不安全
 * happens-before 是内存屏障吗？ → 不是！它是 JMM 抽象规则，内存屏障是实现手段
 * 你在生产用过双检锁吗？ → 没有，用静态内部类或枚举更安全
+
+## 4.JDK动态代理和CGLIB代理的区别
+
+### a>代理目标不同
+
+- **JDK 动态代理**：它**只能代理接口**。目标类必须实现至少一个接口。生成的代理类会实现相同的接口，由 `Proxy` 类创建。
+- **CGLib 代理**：它可以**代理普通类**。其原理是生成目标类的**子类**，通过重写父类的方法来实现增强。
+
+### b>底层实现机制不同
+
+- **JDK 动态代理**：底层使用 Java 的**反射机制**（`java.lang.reflect` 包）。在运行时动态生成符合接口规范的代理类的字节码。
+- **CGLib 代理**：底层依赖第三方的 ASM 库，直接操作**字节码**，生成目标类的子类。
+
+### c>性能与限制
+
+- **性能**：早期 CGLib 的性能通常优于 JDK 动态代理，因为它避免了反射调用的开销，直接调用方法。但在现代 JDK 版本中，由于 JVM 的优化，两者的性能差距已经非常小了。
+- **限制**：CGLib 不能代理 `final` 修饰的类或方法，因为 `final` 的类不能被继承，`final` 的方法不能被重写。
+
+### d>Spring 框架中的应用（实际应用场景）
+
+在 Spring AOP 中，框架会根据情况自动选择：
+
+- **优先使用 JDK 动态代理**：如果目标 Bean 实现了接口，Spring 默认使用 JDK 代理。
+- **退而使用 CGLib**：如果目标 Bean 没有实现接口，或者我们通过配置（`proxyTargetClass = true`）强制要求，Spring 就会使用 CGLib。"
 
 # Spring
 
@@ -2273,6 +2501,48 @@ Spring 使用反射来实现其核心特性：依赖注入。
 | **观察者模式**        | Spring 的事件机制：`ApplicationEvent` + `ApplicationListener` + `ApplicationEventPublisher` | `@EventListener` 注解就是观察者模式的典型应用                |
 | **适配器模式**        | Spring MVC 的 `HandlerAdapter`（把不同的 Controller 适配成统一处理方式） Spring AOP 的 Advice 适配 | DispatcherServlet 根据 HandlerAdapter 调用各种 Controller    |
 | **包装器/装饰器模式** | 动态切换数据源（DataSource → 装饰成动态数据源包装类）        | 多数据源场景常见                                             |
+
+
+
+### a>策略模式（Strategy Pattern）
+
+策略模式定义了一系列算法，并将每一个算法封装起来，使它们可以相互替换。策略模式让算法独立于使用它的客户端，从而使得算法的变化独立于客户端的变化。
+
+核心组件：
+
+1. **抽象策略接口（Strategy Interface）**：定义所有支持的算法的公共接口。
+2. **具体策略类（Concrete Strategies）**：实现抽象策略接口的具体算法。
+3. **上下文（Context）**：持有对具体策略对象的引用，负责调用策略对象来执行算法。
+
+具体应用场景：
+
+- **支付方式选择**：用户选择信用卡、支付宝、微信支付时，客户端根据用户选择动态切换不同的支付策略。
+- **排序算法**：根据数据量大小或特性，动态切换快速排序、冒泡排序、归并排序等。
+- **税收计算**：不同国家或地区有不同的税率计算方法。
+- **Spring Boot 中的自动配置**：`@Conditional` 注解背后的判断逻辑可以看作是一种策略模式的应用，根据不同的环境选择不同的配置策略。
+
+### b>工厂模式（Factory Pattern）
+
+工厂模式用于创建对象，它将对象的实例化过程封装起来，客户端不需要知道如何创建对象，只需要知道要创建什么类型的对象即可。
+
+核心组件：
+
+1. **抽象产品接口（Product Interface）**：定义要创建的所有产品的共同接口。
+2. **具体产品类（Concrete Products）**：实现产品接口的具体产品。
+3. **工厂类（Factory）**：包含创建产品对象的逻辑。
+
+具体应用场景：
+
+- **数据库连接管理**：根据配置动态创建 MySQL、Oracle 或 PostgreSQL 的连接实例。
+- **日志系统**：根据用户选择的日志类型（文件日志、数据库日志、控制台日志）创建不同的日志记录器。
+- **Spring IOC 容器**：Spring 的 BeanFactory 本质上就是一个大型的工厂，负责创建和管理应用中的所有 Bean 实例。
+- **集合工具类**：`Executors.newFixedThreadPool()` 就是一个工厂方法，根据参数创建不同类型的线程池实例。
+
+------
+
+### c>单例模式（Singleton Pattern）的使用场景
+
+单例模式确保一个类在整个应用程序生命周期中**只有一个实例**存在，并提供一个全局访问点。
 
 ## 13、Spring 常用注解有哪些？
 
@@ -2709,6 +2979,40 @@ public class OrderController {
 
 Spring Boot 自动装配 = 根据你 jar 包里有什么，自动把常用组件（DataSource、RedisTemplate、Jackson、Tomcat…）按最优默认配置注入容器，你什么都不用写，开箱即用。
 
+自动配置的核心目标是：**根据项目中添加的依赖，自动推断并配置好相应的 Bean。**
+
+1. 通过 `@EnableAutoConfiguration` **扫描**所有 JAR 包中定义的自动配置类。
+2. 通过 `@Conditional` 系列**条件注解**智能判断哪些配置应该生效。
+3. **如果**用户已经自定义了配置，**则**自动配置退后让步（`@ConditionalOnMissingBean`）。
+
+### 1.核心注解：`@SpringBootApplication`
+
+当我们启动一个 Spring Boot 应用时，入口类上的 `@SpringBootApplication` 注解是起点。这个复合注解包含了几个关键注解，其中与自动配置直接相关的有：
+
+- **`@EnableAutoConfiguration`**：这是开启自动配置魔力的关键注解。
+
+### 2.扫描机制：`@EnableAutoConfiguration` 的作用
+
+当 Spring 容器启动并检测到 `@EnableAutoConfiguration` 时，它会执行以下动作：
+
+- **查找配置文件**：它会去 classpath 下查找所有 JAR 包中的 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` 文件（在旧版本中是 `spring.factories` 文件）。
+- **读取配置类**：这些文件列出了所有可用的自动配置类（通常是标记了 `@Configuration` 的 Java 类）。Spring Boot 的各个 Starters（例如 `spring-boot-starter-web`、`spring-boot-starter-jdbc`）在自己的 JAR 包里都包含了这样的文件。
+
+### 3. 条件判断：`@Conditional` 系列注解
+
+读取到配置类列表后，Spring Boot 并不会一股脑地把所有的 Bean 都创建出来。它会利用强大的条件化配置注解 (`@Conditional` family) 来进行智能判断：
+
+- **`@ConditionalOnClass`**：**只有**当 classpath 中存在指定的类时，该配置类才生效。
+  - *例如*：`DataSourceAutoConfiguration` 配置类只有在检测到 `javax.sql.DataSource` 类存在时才会被加载。
+- **`@ConditionalOnMissingBean`**：**只有**当容器中**不存在**指定类型的 Bean 时，该配置类才生效。
+  - *例如*：如果用户自己手动创建了一个 `DataSource` Bean，那么自动配置就会“让路”，尊重用户的自定义配置。
+- **`@ConditionalOnProperty`**：**只有**当 Spring Environment 中存在指定的配置属性且值匹配时才生效。
+- **`@ConditionalOnWebApplication` / `@ConditionalOnNotWebApplication`**：判断当前应用是否是 Web 应用。
+
+### 4.最终结果：Bean 的创建
+
+只有通过了所有 `@Conditional` 条件检查的自动配置类，才会被加载到 Spring IoC 容器中，从而创建出所需的 Bean（如 `DataSource`, `DispatcherServlet`, `JdbcTemplate` 等），使得应用可以直接运行。
+
 ## 20、Springboot有什么启动器？
 
 | Starter 名称                       | 作用（一句话记住）                                    | 实际生产使用频率 | 备注（面试常被问）                   |
@@ -2732,9 +3036,27 @@ Spring Boot 自动装配 = 根据你 jar 包里有什么，自动把常用组件
 
 
 
+## 21、@Conditional的工作原理（运行时动态决策）
 
+`@Conditional` 注解的工作原理可以概括为以下几点：
 
+1. **实现 `Condition` 接口**：`@Conditional` 注解本身只是一个标记，它需要一个实现了 `org.springframework.context.annotation.Condition` 接口的类作为参数。这个 `Condition` 实现类包含了具体的判断逻辑。
+2. **`matches()` 方法**：`Condition` 接口中只有一个核心方法 `matches(ConditionContext context, AnnotatedTypeMetadata metadata)`。Spring IoC 容器在尝试**加载一个被 `@Conditional` 标记的配置类或 Bean** 之前，会先调用这个 `matches()` 方法。
+3. **动态判断环境**：`matches()` 方法能够访问到当前的**环境上下文（`Environment`）**、**类路径（`ClassLoader`）**、**Bean 定义信息**等一切必要信息。它会执行预设的逻辑判断，例如：
+   - “Classpath 中有没有 `Redis` 相关的类？”
+   - “Spring 配置文件里 `spring.datasource.url` 属性有没有设置？”
+   - “容器里有没有名为 `myUserService` 的 Bean？”
+4. **返回布尔值决策**：
+   - 如果 `matches()` 返回 `true`，则 Spring 容器**继续加载**这个配置类或 Bean。
+   - 如果 `matches()` 返回 `false`，则 Spring 容器会**完全跳过**这个配置，就像它从未存在过一样。
 
+## 设计模式用的多吗？用了哪些？
+
+## 策略模式和工厂模式是怎么实现的？具体应用场景是什么？
+
+## 什么情况下会使用单例模式？
+
+## 单例模式的使用场景是什么？
 
 
 
@@ -2799,6 +3121,34 @@ sequenceDiagram
     Auth->>R: 12. 写入 jti 到 Redis 黑名单（TTL=exp-iat）
     Auth->>U: 13. 删除 Cookie
 ```
+
+## 5、死锁是什么？
+
+
+
+死锁是指**多个线程或事务互相持有对方需要的资源且都不释放，导致相互等待，从而永远无法继续执行的状态**。
+
+> 死锁的本质是循环等待 + 不释放资源。
+
+### 死锁的四个必要条件（面试必考）
+
+死锁只有在同时满足以下四个条件时才会产生（任意破坏一个即可避免）：
+
+1. **互斥条件**：资源一次只能被一个占用
+2. **非抢占条件**：资源不能被强制抢占
+3. **占有并等待**：持有资源又申请资源
+4. **循环等待**：形成资源依赖闭环
+
+------
+
+### 死锁触发场景
+
+- 多线程环境
+- 数据库事务并发
+- 分布式锁使用不当
+- Kafka、Redis、MQ 等消费逻辑阻塞
+
+
 
 
 
@@ -3459,156 +3809,6 @@ return 0
    1. Headers是一个键值对,可以定义成Hashtable。发送者在发送的时候定义一些键值对，接收者也可以再绑定时候传入一些键值对，两者匹配的话，则对应的队列就可以收到消息。匹配有两种方式all和any。这两种方式是在接收端必须要用键值"x-mactch"来定义。
 5. Default Exchange 是 RabbitMQ 内置、隐式、不可声明 的 Direct 类型交换机，名字为 ""（空字符串）。 作用：当生产者不指定 Exchange 时，自动路由到 routingKey == 队列名 的队列，实现 “直连队列” 效果。
 
-# 分布式和微服务
-
-## 1.什么是分布式事务？分布式事务的解决方案？
-
-**分布式事务**：跨越多个服务/数据库的事务，需保证 **ACID** 在分布式环境下的等效性。 
-
-**解决方案**：
-
-1. **2PC/3PC**（强一致，阻塞）
-2. **TCC**（业务侵入，高性能）
-3. **SAGA**（最终一致，长事务）
-4. **本地消息表 + MQ**（最终一致，简单可靠）
-5. **最大努力通知**（弱一致）
-
-## 2,分布式锁如何实现？RedLock算法
-
-分布式锁：多进程共享的互斥锁。 
-
-### 1>**Redis 分布式锁**（最常用）
-
-
-
-```
-String productId = "10086";
-
-// 1. 最常见写法：value 用随机 UUID（手动实现也安全）
-String lockValue = UUID.randomUUID().toString();
-String lockKey = "lock:seckill:product:" + productId;
-
-boolean locked = redisTemplate.opsForValue()
-    .setIfAbsent(lockKey, lockValue, 30, TimeUnit.SECONDS);  // NX PX
-
-// 解锁时必须校验 value！
-String currentValue = (String) redisTemplate.opsForValue().get(lockKey);
-if (lockValue.equals(currentValue)) {
-    redisTemplate.delete(lockKey);
-}
-```
-
-
-
-```
-// 2. Redisson 写法（2025 大厂 95%+ 在用，自动帮你做上面所有事）
-RLock lock = redisson.getLock("lock:seckill:product:" + productId);
-// 内部结构：
-// key   = lock:seckill:product:10086
-// value = { "threadId": 12345, "reentrantCount": 1 }  ← Hash 结构 + 自动续期
-lock.lock(30, TimeUnit.SECONDS);
-```
-
-
-
-```
-// 3. 高级版：value 带业务信息（方便排查问题）
-String lockValue = requestId + ":" + threadId + ":" + UUID.randomUUID().toString();
-```
-
-### 2>**Zookeeper 分布式锁**（强一致性）
-
-### 3>**数据库分布式锁**（简单）
-
-Redis 实现：SET lock_key unique_value NX PX 30000（原子） 
-
-### 1. **什么是 RedLock？**
-
-> **RedLock** 是 Redis 官方提出的**分布式锁算法**（Distributed Lock），由 Redis 作者 Salvatore Sanfilippo（antirez）设计。 它通过**多个独立 Redis 节点**实现**故障容错的互斥锁**，避免单点故障（如单个 Redis 实例宕机导致锁失效）。
-
-> **核心目标：** 在分布式环境中，确保**只有一个客户端能持有锁**，即使有节点失败或网络分区。
-
-RedLock：在 N 个独立 Redis 节点 上获取锁，多数派（N/2+1）成功即获锁，解决单点失效。
-
-### 2.Redisson 框架
-
-> **Redisson** 是 **Redis 的高级 Java 客户端**，基于 Netty 异步框架，提供**分布式数据结构和服务**。 它将 Redis 的简单键值对扩展为**丰富的 Java 对象**（如分布式锁、队列、Map），支持**同步/异步/RxJava** API。
-
-```
-// 1. 引入 Redisson（所有大厂都在用）
-<dependency>
-    <groupId>org.redisson</groupId>
-    <artifactId>redisson-spring-boot-starter</artifactId>
-    <version>3.32.0</version>   // 2025 最新版
-</dependency>
-
-// 2. 配置（单机/集群都支持）
-@Configuration
-public class RedissonConfig {
-    @Bean
-    public RedissonClient redissonClient() {
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
-        // 集群模式：config.useClusterServers().addNodeAddress("redis://ip:port", ...)
-        return Redisson.create(config);
-    }
-}
-
-// 3. 使用（秒杀、订单、支付全部这么写）
-@Service
-public class SeckillService {
-    @Autowired
-    private RedissonClient redisson;
-
-    public boolean doSeckill(String userId, String productId) {
-        RLock lock = redisson.getLock("lock:seckill:" + productId);
-        
-        // 核心参数：30秒自动过期 + 看门狗自动续期 + 不阻塞等待
-        boolean acquired = lock.tryLock(0, 30, TimeUnit.SECONDS);
-        if (!acquired) {
-            return false; // 抢锁失败
-        }
-
-        try {
-            // 业务代码：查库存 → 扣减 → 下单
-            Long stock = redisTemplate.opsForValue().decrement("stock:" + productId);
-            if (stock < 0) {
-                redisTemplate.opsForValue().increment("stock:" + productId);
-                return false;
-            }
-            // 创建订单...
-            return true;
-        } finally {
-            lock.unlock(); // 必须在 finally 里解锁
-        }
-    }
-}
-```
-
-### 4：Redis 分布式锁为什么用 SETNX + EXPIRE 不安全？
-
-> **A：** 两步操作非原子。可能 SETNX 成功后宕机，锁永不过期 → 死锁 **正确：** 用 SET key value NX PX 30000（原子）
-
-### 5：Redisson 怎么防止锁过期？
-
-> **A：** 看门狗（Watch Dog）线程，每 expire/3 时间续期一次
-
-### 6：Zookeeper 比 Redis 强在哪？
-
-> **A：** 强一致性 + CP 模型，适合配置中心、注册中心
-
-### 7：RedLock 算法的核心步骤？
-
-> **A：** 生成唯一值 → 顺序在 N 个独立 Redis 节点加锁（SET NX PX） → 多数（N/2+1）成功 + 有效时间检查 → 成功则持有，否则释放重试。解锁用 Lua 脚本原子删除。
-
-### 8：Redisson 是什么？它如何支持分布式锁？
-
-> **A：** Redisson 是 Redis 的 Java 客户端，提供分布式 Java 对象和服务。支持 RedLock 通过 RedLock 类实现多锁组合，自动处理续期和故障转移。
-
-### 9：RedLock 的潜在问题？
-
-> **A：** 时钟漂移、网络分区可能导致不一致；Martin Kleppmann 批评无 fencing token。但在异步网络假设下可靠。
-
 
 
 
@@ -3848,15 +4048,22 @@ MySQL（InnoDB）用 **B+ 树** 做索引因为：
 MySQL（InnoDB）支持 **四种事务隔离级别**：
 
 1. **READ UNCOMMITTED（读未提交）**
-    → 可能出现脏读、不可重复读、幻读
+    - 可能出现脏读、不可重复读、幻读
+    - 写操作加排他锁，读操作不加锁
 2. **READ COMMITTED（读已提交）**
-    → 解决脏读，但仍有不可重复读、幻读
-    → Oracle 默认级别
+    - 写操作加排他锁，读操作使用MVCC
+    - → 解决脏读，但仍有不可重复读、幻读
+    - → Oracle 默认级别
 3. **REPEATABLE READ（可重复读）**（MySQL 默认）
-    → 解决脏读 + 不可重复读
-    → MySQL 通过 **MVCC + Next-Key Lock** 解决幻读
+    - 写操作加排他锁+间隙锁，读操作使用MVCC
+    - → 解决脏读 + 不可重复读
+    - → MySQL 通过 **MVCC + Next-Key Lock** 解决幻读
+      - **MVCC（快照读）**：SELECT语句读取事务开始时的数据快照，避免看到其他事务的插入
+      - **Next-Key Lock（当前读）**：SELECT...FOR UPDATE锁定索引记录+间隙，物理阻止其他事务插入
 4. **SERIALIZABLE（串行化）**
-    → 所有事务串行执行，性能最差但最安全
+    1. 所有操作加范围锁
+    2. → 所有事务串行执行，性能最差但最安全
+
 
 一句话总结：
  **MySQL 默认 REPEATABLE READ，并通过 MVCC + 间隙锁避免幻读。**
@@ -4727,6 +4934,15 @@ Calculation View 最好用 **Column Engine**，不要触发 **Join Engine / OLAP
 
 ------
 
+## 18、HANA事务隔离级别？怎么解决的不可重复读？
+
+锁定 WHERE 条件所涉及的范围，而不只是结果行。
+
+SAP HANA 在 READ COMMITTED 下仍然能避免大多数不可重复读，因为它基于 MVCC 和 statement-level snapshot 实现一致性读取，同时结合 predicate locking 避免范围被更新。
+ 和传统数据库相比，HANA 的 RC 隔离效果更接近 RR。
+
+
+
 # Kafka 
 
 ## 一、 Kafka 基础概念
@@ -4776,6 +4992,8 @@ Calculation View 最好用 **Column Engine**，不要触发 **Join Engine / OLAP
   - **原因：** 消费者在处理完消息后提交 `offset` 前宕机，重启后会从上次提交的 `offset` 处重新消费，导致重复。
   - **避免（幂等性）：** 在消费者端实现**幂等性**。即无论消息处理多少次，最终结果都是一致的。可以通过给消息加唯一 ID，并记录处理状态（例如，使用数据库记录已处理的 ID）来实现。
 
+
+
 ## 三、 架构与部署
 
 ### **8. Kafka 使用 Zookeeper 吗？它的作用是什么？**
@@ -4798,9 +5016,245 @@ Calculation View 最好用 **Column Engine**，不要触发 **Join Engine / OLAP
   - 使用 `@KafkaListener` 注解来标记消费者方法。
   - 使用 `KafkaTemplate` 将消息发送到 Topic。
 
+## 11、Rebalance（重平衡）
+
+是指动态地、高可用地分配分区给消费者
+
+作用：
+
+- 确保一个分区，在同一时间只被消费者组内的一个消费者消费，并且消费者组内所有消费者都能共同分摊所有分区的消费任务。
+
+when：
+
+- 新消费者加入
+- 消费者离开
+- 消费者心跳超时
+- 主题变更：增加新分区（可能不触发）
+
+Rebalance 过程中，消费者组会**暂停消费**。消费者协调器会重新计算分区与消费者的映射关系，并将新的分配方案通知给所有消费者。这个过程涉及**停止消费、提交位移、加入组、接收分配、恢复消费**等步骤。
+
+2. `ENABLE_AUTO_COMMIT_CONFIG` 与“处理完再提交”策略
+
+### 1>ENABLE_AUTO_COMMIT_CONFIG
+
+这个配置项决定了 Kafka 客户端何时自动提交消费位移（Offset）。
+
+`ENABLE_AUTO_COMMIT_CONFIG = true` (默认配置)
+
+- **自动提交**：Kafka 客户端会定期（由 `auto.commit.interval.ms` 配置，默认为 5 秒）在后台异步提交它**已经拉取到本地**的最新位移。
+- **问题**：即使消息还在本地处理中甚至根本没开始处理，位移也可能被提交。如果消费者在处理完消息之前崩溃，重启后会从已提交的位移开始消费，**导致未处理的消息丢失（数据丢失）**。
+
+`ENABLE_AUTO_COMMIT_CONFIG = false` (“处理完再提交”策略)
+
+- **手动提交**：你需要手动调用 `consumer.commitSync()` 或 `consumer.commitAsync()` 方法来提交位移。
+- **“处理完再提交”策略**：这是一种编程实践，意味着你必须确保**消息的所有业务逻辑都执行成功后**，才调用提交位移的方法。
+
+### 2>为什么这个策略可行且推荐？
+
+这个策略保证了**“至少一次消费（At Least Once Semantics）”**的语义：
+
+- **保证不丢失数据**：如果消费者在处理消息 M50 时崩溃，它还没有来得及提交 M50 的位移。当一个新的消费者（或重启后的原消费者）接管分区时，它会从上一个已提交的位移（例如 M1）开始重新消费 M1 到 M50。
+- **确保业务成功**：虽然 M1 到 M50 可能会被重复消费，但所有消息都被成功处理了至少一次。相比数据丢失，重复处理通常是更容易通过业务幂等性解决的问题。
 
 
 
+### 3>增加会话超时时间减少不必要的 Rebalance
+
+调整消费者的配置（例如增加 `session.timeout.ms`）可以降低触发 Rebalance 的频率，从而降低重复消费的概率。
+
+原理：
+
+- **心跳机制**：消费者需要定期向 Kafka 协调器发送心跳（`heartbeat.interval.ms`）。
+- **超时判定**：`session.timeout.ms`（默认为 45 秒）定义了协调器等待心跳的最长时间。如果在超时时间内没有收到心跳，协调器就认为该消费者已宕机，并立即触发 Rebalance。
+
+为什么调整它可行？
+
+在实际运行中，消费者可能因为**临时的网络抖动**或**本地 GC 停顿（STW）**而无法及时发送心跳。
+
+- **增加超时时间**：将 `session.timeout.ms` 增加到一个合理的值（例如 1 到 2 分钟），可以容忍更长时间的临时故障或 GC 停顿，避免不必要的 Rebalance 发生。
+- **降低重复消费概率**：Rebalance 发生得越少，出现“消息处理完成但位移未提交”的时间窗口就越少，自然就降低了重复消费的风险。
+
+# 分布式和微服务
+
+## 1.什么是分布式事务？分布式事务的解决方案？
+
+**分布式事务**：跨越多个服务/数据库的事务，需保证 **ACID** 在分布式环境下的等效性。 
+
+**解决方案**：
+
+1. **2PC/3PC**（强一致，阻塞）
+2. **TCC**（业务侵入，高性能）
+3. **SAGA**（最终一致，长事务）
+4. **本地消息表 + MQ**（最终一致，简单可靠）
+5. **最大努力通知**（弱一致）
+
+## 2,分布式锁如何实现？RedLock算法
+
+分布式锁：多进程共享的互斥锁。 
+
+### 1>**Redis 分布式锁**（最常用）
+
+## 方案 1：Redisson
+
+它帮你自动续期：
+
+> 如果业务没执行完，锁会自动延期。
+
+而且支持:
+
+- 可重入锁
+- 看门狗机制
+- 公平锁
+
+------
+
+## 方案 2：使用 RedLock 算法
+
+适用于分布式 Redis 集群：
+
+- 多节点同时加锁
+- 超过半数成功才算成功
+- 支持故障容错
+
+面试可这么说：
+
+> 单 Redis 不是强一致保证，Redis 挂掉确实会导致锁丢失，因此生产级分布式锁需要 Redisson 或 RedLock 机制避免单点故障。
+
+```
+String productId = "10086";
+
+// 1. 最常见写法：value 用随机 UUID（手动实现也安全）
+String lockValue = UUID.randomUUID().toString();
+String lockKey = "lock:seckill:product:" + productId;
+
+boolean locked = redisTemplate.opsForValue()
+    .setIfAbsent(lockKey, lockValue, 30, TimeUnit.SECONDS);  // NX PX
+
+// 解锁时必须校验 value！
+String currentValue = (String) redisTemplate.opsForValue().get(lockKey);
+if (lockValue.equals(currentValue)) {
+    redisTemplate.delete(lockKey);
+}
+```
+
+
+
+```
+// 2. Redisson 写法（2025 大厂 95%+ 在用，自动帮你做上面所有事）
+RLock lock = redisson.getLock("lock:seckill:product:" + productId);
+// 内部结构：
+// key   = lock:seckill:product:10086
+// value = { "threadId": 12345, "reentrantCount": 1 }  ← Hash 结构 + 自动续期
+lock.lock(30, TimeUnit.SECONDS);
+```
+
+
+
+```
+// 3. 高级版：value 带业务信息（方便排查问题）
+String lockValue = requestId + ":" + threadId + ":" + UUID.randomUUID().toString();
+```
+
+### 2>**Zookeeper 分布式锁**（强一致性）
+
+### 3>**数据库分布式锁**（简单）
+
+Redis 实现：SET lock_key unique_value NX PX 30000（原子） 
+
+### 1. **什么是 RedLock？**
+
+> **RedLock** 是 Redis 官方提出的**分布式锁算法**（Distributed Lock），由 Redis 作者 Salvatore Sanfilippo（antirez）设计。 它通过**多个独立 Redis 节点**实现**故障容错的互斥锁**，避免单点故障（如单个 Redis 实例宕机导致锁失效）。
+
+> **核心目标：** 在分布式环境中，确保**只有一个客户端能持有锁**，即使有节点失败或网络分区。
+
+RedLock：在 N 个独立 Redis 节点 上获取锁，多数派（N/2+1）成功即获锁，解决单点失效。
+
+### 2.Redisson 框架
+
+> **Redisson** 是 **Redis 的高级 Java 客户端**，基于 Netty 异步框架，提供**分布式数据结构和服务**。 它将 Redis 的简单键值对扩展为**丰富的 Java 对象**（如分布式锁、队列、Map），支持**同步/异步/RxJava** API。
+
+```
+// 1. 引入 Redisson（所有大厂都在用）
+<dependency>
+    <groupId>org.redisson</groupId>
+    <artifactId>redisson-spring-boot-starter</artifactId>
+    <version>3.32.0</version>   // 2025 最新版
+</dependency>
+
+// 2. 配置（单机/集群都支持）
+@Configuration
+public class RedissonConfig {
+    @Bean
+    public RedissonClient redissonClient() {
+        Config config = new Config();
+        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
+        // 集群模式：config.useClusterServers().addNodeAddress("redis://ip:port", ...)
+        return Redisson.create(config);
+    }
+}
+
+// 3. 使用（秒杀、订单、支付全部这么写）
+@Service
+public class SeckillService {
+    @Autowired
+    private RedissonClient redisson;
+
+    public boolean doSeckill(String userId, String productId) {
+        RLock lock = redisson.getLock("lock:seckill:" + productId);
+        
+        // 核心参数：30秒自动过期 + 看门狗自动续期 + 不阻塞等待
+        boolean acquired = lock.tryLock(0, 30, TimeUnit.SECONDS);
+        if (!acquired) {
+            return false; // 抢锁失败
+        }
+
+        try {
+            // 业务代码：查库存 → 扣减 → 下单
+            Long stock = redisTemplate.opsForValue().decrement("stock:" + productId);
+            if (stock < 0) {
+                redisTemplate.opsForValue().increment("stock:" + productId);
+                return false;
+            }
+            // 创建订单...
+            return true;
+        } finally {
+            lock.unlock(); // 必须在 finally 里解锁
+        }
+    }
+}
+```
+
+### 4：Redis 分布式锁为什么用 SETNX + EXPIRE 不安全？
+
+> **A：** 两步操作非原子。可能 SETNX 成功后宕机，锁永不过期 → 死锁 
+>
+> **正确：** 用 SET key value NX PX 30000（原子）
+
+### 5：Redisson 怎么防止锁过期？
+
+> **A：** 看门狗（Watch Dog）线程，每 expire/3 时间续期一次
+
+续期线程会监控持锁线程是否仍在运行：
+
+- 线程存活 → 续期
+- 线程结束 / unlock 调用 → 停止续期
+- JVM / 进程挂掉 → 续期线程也挂了 → 锁自动过期释放
+
+### 6：Zookeeper 比 Redis 强在哪？
+
+> **A：** 强一致性 + CP 模型，适合配置中心、注册中心
+
+### 7：RedLock 算法的核心步骤？
+
+> **A：** 生成唯一值 → 顺序在 N 个独立 Redis 节点加锁（SET NX PX） → 多数（N/2+1）成功 + 有效时间检查 → 成功则持有，否则释放重试。解锁用 Lua 脚本原子删除。
+
+### 8：Redisson 是什么？它如何支持分布式锁？
+
+> **A：** Redisson 是 Redis 的 Java 客户端，提供分布式 Java 对象和服务。支持 RedLock 通过 RedLock 类实现多锁组合，自动处理续期和故障转移。
+
+### 9：RedLock 的潜在问题？
+
+> **A：** 时钟漂移、网络分区可能导致不一致；Martin Kleppmann 批评无 fencing token。但在异步网络假设下可靠。
 
 
 
@@ -4946,6 +5400,8 @@ RabbitMQ（异步事件） + Dynatrace（全链路追踪） + OSS 日志
 
 ### 一句话总述（开场 15 秒，直接秒杀面试官）
 “我深度参与并主导了 SAP 全球核心 SaaS 产品（Fiori Launchpad / Entitlement Platform）的中国区后端微服务开发，属于典型的多租户、大流量、低延迟企业级分布式系统，核心服务部署在 Cloud Foundry 上，日均处理亿级 API 调用，QPS 峰值 5000+，RT < 80ms，服务可用性 99.99%+。”
+
+主导并参与企业级数据中台建设，采用 SpringBoot + Eureka 微服务架构，配合 Redis + RabbitMQ 实现异步解耦与最终一致性，结合 HANA 列存建模与 SQL 优化方案支撑高性能查询场景，通过 Cloud Foundry + Docker + GitHub Actions 建设 CI/CD 与多环境部署体系，实现系统高可用、可扩展与高性能。
 
 
 
@@ -5168,4 +5624,64 @@ public class EntitlementQueryService {
 
 我们项目的主键 GUID 更大概率使用的是 **HANA 内置的 `SYSUUID_STRING`（UUID v4）** 生成方式。
  理由是 HANA 提供了原生 UUID 生成能力，生成速度快、冲突概率极低、跨服务一致性高，并且便于前后端、消息队列和多语言系统间传递。
+
+## 2.线程池
+
+------
+
+## 1️⃣ Spring Boot 常用线程池场景
+
+| 场景                                  | 是否需要线程池 | 说明                                                         |
+| ------------------------------------- | -------------- | ------------------------------------------------------------ |
+| **异步任务 / @Async**                 | ✅ 必须配置     | Spring Boot 默认会创建一个 `SimpleAsyncTaskExecutor`，但是它没有线程复用，企业级项目通常自定义线程池（`ThreadPoolTaskExecutor`）来控制线程数、队列长度和拒绝策略。 |
+| **消息队列消费（RabbitMQ Listener）** | ✅ 通常配置     | 消费端多线程并发处理消息，需要线程池来控制并发量，避免过载 DB 或 Redis。 |
+| **定时任务 / Scheduled**              | ✅ 可配置       | `@Scheduled` 默认单线程，复杂项目通常自定义 `ScheduledExecutorService` 或线程池，提高任务并发处理能力。 |
+| **Web 请求线程池（Tomcat / Netty）**  | ✅ 默认存在     | Spring Boot 内置 Tomcat/Undertow/Nginx 等线程池，可配置最大线程数、队列长度等参数。 |
+| **DB Clean Service 批量操作**         | ✅ 建议配置     | 批量删除/插入 tenant 数据可以用线程池并行处理不同 tenant 或批次，提升吞吐量，但要注意事务隔离。 |
+| **Script Generator / AI 调用**        | ✅ 建议配置     | 调用 LLM 或外部 API 时使用线程池，防止阻塞主线程，提高并发处理能力。 |
+
+------
+
+## 2️⃣ 典型线程池配置示例（Spring Boot）
+
+```java
+@Configuration
+@EnableAsync
+public class ThreadPoolConfig {
+
+    @Bean(name = "asyncExecutor")
+    public Executor asyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);    // 核心线程数
+        executor.setMaxPoolSize(50);     // 最大线程数
+        executor.setQueueCapacity(100);  // 队列长度
+        executor.setThreadNamePrefix("Async-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy()); // 拒绝策略
+        executor.initialize();
+        return executor;
+    }
+}
+```
+
+- 对 **消息队列消费** 也可以类似配置：
+
+```java
+SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
+container.setConcurrentConsumers(5); // 并发消费者数
+container.setMaxConcurrentConsumers(20);
+```
+
+------
+
+## 3️⃣ 项目中线程池使用场景总结
+
+1. **异步调用**：DB Clean Service 的批量处理、Script Generator 调用 LLM。
+2. **消息队列消费**：RabbitMQ Listener 多线程并发消费，保证高吞吐量。
+3. **定时任务**：E2E 测试任务、定期清理缓存或 DB 批次。
+4. **Web 请求线程池**：Tomcat 默认线程池，支撑高 QPS 查询。
+
+> 面试中可以表述：
+>  “项目中对异步任务、批量处理、消息消费都配置了专用线程池，通过合理设置核心/最大线程数、队列容量和拒绝策略，保证高并发下系统稳定性和吞吐量，同时避免阻塞主线程或数据库压力过大。”
+
+
 
