@@ -1,12 +1,39 @@
 - [目录](#目录)
   - [1.进程和线程的区别？使用线程这能节约时间吗？](#1进程和线程的区别使用线程这能节约时间吗)
   - [2.分析一下线程池的参数？线程池工作流程？四种预定义的线程池？各自的workqueue size是多少？](#2分析一下线程池的参数线程池工作流程四种预定义的线程池各自的workqueue-size是多少)
-  - [3.java怎么保持线程同步常用的锁有什么java锁升级是怎么样的](#3java怎么保持线程同步常用的锁有什么java锁升级是怎么样的)
+    - [2.1工作流程](#21工作流程)
+    - [2.2四种预定义线程池的区别和workqueue的大小](#22四种预定义线程池的区别和workqueue的大小)
+    - [2.3线程工厂](#23线程工厂)
+    - [面试高频补充](#面试高频补充)
+  - [3.java怎么保持线程同步？常用的锁有什么？java锁升级是怎么样的](#3java怎么保持线程同步常用的锁有什么java锁升级是怎么样的)
+    - [1\>常用锁](#1常用锁)
+      - [1. 内置锁（synchronized）](#1-内置锁synchronized)
+      - [2. 显式锁（Lock 接口）](#2-显式锁lock-接口)
+      - [3. 其他锁类型](#3-其他锁类型)
+    - [2\>Java 锁升级机制（synchronized 优化）](#2java-锁升级机制synchronized-优化)
+      - [1. 偏向锁](#1-偏向锁)
+      - [2. 轻量级锁](#2-轻量级锁)
+      - [3. 重量级锁](#3-重量级锁)
+      - [锁升级过程总结：](#锁升级过程总结)
   - [4.synchonized和lock的区别？synchonized优化](#4synchonized和lock的区别synchonized优化)
+    - [1\>ReentrantLock 底层怎么实现的（AQS）？](#1reentrantlock-底层怎么实现的aqs)
+      - [AQS 核心组成（背下来）](#aqs-核心组成背下来)
+      - [ReentrantLock 加锁全过程（非公平锁默认流程，面试最常问）](#reentrantlock-加锁全过程非公平锁默认流程面试最常问)
   - [5.hashmap同步问题，扩容机制，怎么扩容的过程？哈希冲突哪有哪些解决？](#5hashmap同步问题扩容机制怎么扩容的过程哈希冲突哪有哪些解决)
+    - [1.扩容机制](#1扩容机制)
+    - [2.哈希冲突怎么解决](#2哈希冲突怎么解决)
   - [6.concurrentHashmap的工作原理，数据结构？](#6concurrenthashmap的工作原理数据结构)
+    - [6.1核心要点](#61核心要点)
+      - [1\>put 流程（30 秒画完的经典八股）](#1put-流程30-秒画完的经典八股)
+      - [5\>get 流程（真正无锁读！）](#5get-流程真正无锁读)
+      - [6\>注意](#6注意)
   - [7.泛型是什么？怎么实现的？](#7泛型是什么怎么实现的)
   - [8.怎么理解面向对象？简单聊聊封装、多态、继承](#8怎么理解面向对象简单聊聊封装多态继承)
+    - [1.编程范式：面向过程与面向对象](#1编程范式面向过程与面向对象)
+      - [1. 面向过程（Procedure-Oriented Programming, POP）](#1-面向过程procedure-oriented-programming-pop)
+      - [2. 面向对象（Object-Oriented Programming, OOP）](#2-面向对象object-oriented-programming-oop)
+      - [3. 其他常见范式](#3-其他常见范式)
+    - [2.简单聊聊封装、多态、继承](#2简单聊聊封装多态继承)
   - [9.Integer和Int的区别？什么时候用Integer？new Integer(1)会不会从缓存中取？](#9integer和int的区别什么时候用integernew-integer1会不会从缓存中取)
   - [10.List为什么只能用Integer 不能用int的原因是什么？](#10list为什么只能用integer-不能用int的原因是什么)
   - [11.介绍下NIO，NIO中channel的作用？](#11介绍下nionio中channel的作用)
@@ -61,45 +88,157 @@
   - [43、java8的新特性。](#43java8的新特性)
   - [44、什么是序列化，怎么序列化，为什么序列化，反序列化会遇到什么问题，如何解决。](#44什么是序列化怎么序列化为什么序列化反序列化会遇到什么问题如何解决)
     - [终极结论（面试/架构师必背 3 句话）](#终极结论面试架构师必背-3-句话)
+  - [45、Java基础](#45java基础)
+    - [1.面向对象编程的特性？](#1面向对象编程的特性)
+    - [2.四大修饰符和作用范围](#2四大修饰符和作用范围)
+    - [3.基础数据类型](#3基础数据类型)
+    - [4.引用类型](#4引用类型)
+    - [5.主要接口](#5主要接口)
+      - [1 \>List](#1-list)
+      - [2\>Set](#2set)
+      - [3\>Queue](#3queue)
+      - [4\>Map](#4map)
+  - [46、JAVA怎么保证线程安全？](#46java怎么保证线程安全)
+  - [47、ThreadLocal的原理？注意点](#47threadlocal的原理注意点)
+  - [48、事务中的一致性和分布式系统中的一致性是一样的吗](#48事务中的一致性和分布式系统中的一致性是一样的吗)
+  - [49、Array的底层结构](#49array的底层结构)
+  - [50、HashMap TreeMap的底层原理，是否安全](#50hashmap-treemap的底层原理是否安全)
+  - [](#)
+  - [51、不同JDK的特性](#51不同jdk的特性)
+  - [52、ConcurrentHashMap](#52concurrenthashmap)
+    - [为什么JDK8放弃分段锁改用synchronized？](#为什么jdk8放弃分段锁改用synchronized)
+    - [ConcurrentHashMap在扩容时如何保证线程安全？](#concurrenthashmap在扩容时如何保证线程安全)
+    - [CAS](#cas)
+      - [自旋](#自旋)
+      - [伪共享问题](#伪共享问题)
+  - [53、AtomicInteger](#53atomicinteger)
+  - [54、内存溢出和内存泄漏](#54内存溢出和内存泄漏)
 - [JVM](#jvm)
   - [1.谈谈多态，多态的底层原理](#1谈谈多态多态的底层原理)
   - [2.CAS的底层原理，synchonized的底层原理](#2cas的底层原理synchonized的底层原理)
       - [**CAS（Compare And Swap）**](#cascompare-and-swap)
       - [**synchronized 底层原理**](#synchronized-底层原理)
   - [3.volatile的原理？](#3volatile的原理)
+  - [4.JDK动态代理和CGLIB代理的区别](#4jdk动态代理和cglib代理的区别)
+    - [a\>代理目标不同](#a代理目标不同)
+    - [b\>底层实现机制不同](#b底层实现机制不同)
+    - [c\>性能与限制](#c性能与限制)
+    - [d\>Spring 框架中的应用（实际应用场景）](#dspring-框架中的应用实际应用场景)
 - [Spring](#spring)
   - [1.Spring 的核心模块有哪些？IOC 和 AOP 的原理？](#1spring-的核心模块有哪些ioc-和-aop-的原理)
   - [2.spring的事务传播是怎么样的，哪些方式？](#2spring的事务传播是怎么样的哪些方式)
   - [3.spring是如何解决循环依赖的?](#3spring是如何解决循环依赖的)
   - [4.@Autowired 字段注入 vs 构造器注入，循环依赖影响？](#4autowired-字段注入-vs-构造器注入循环依赖影响)
   - [5.ApplicationContext.getBean() 触发循环依赖吗？](#5applicationcontextgetbean-触发循环依赖吗)
+  - [5. 说一下你对 Spring 的理解](#5-说一下你对-spring-的理解)
+  - [6. Spring 的核心思想](#6-spring-的核心思想)
+  - [7. Spring IoC 和 AOP 详细介绍](#7-spring-ioc-和-aop-详细介绍)
+  - [8. IOC 和 AOP 是通过什么机制来实现的？](#8-ioc-和-aop-是通过什么机制来实现的)
+    - [“1\>我给您捋一下 Spring 容器启动 + IoC + AOP 的完整生命周期，重点说清楚 AOP 是怎么插进来的：](#1我给您捋一下-spring-容器启动--ioc--aop-的完整生命周期重点说清楚-aop-是怎么插进来的)
+    - [2\>IOC和AOP是通过什么机制来实现的？](#2ioc和aop是通过什么机制来实现的)
+      - [Spring IOC 实现机制](#spring-ioc-实现机制)
+      - [Spring AOP 实现机制](#spring-aop-实现机制)
+  - [9、依赖倒置，依赖注入，控制反转分别是什么？](#9依赖倒置依赖注入控制反转分别是什么)
+  - [10、AOP 在 Spring 中的应用，你知道哪些？](#10aop-在-spring-中的应用你知道哪些)
+  - [11、**什么是反射？有哪些使用场景？**](#11什么是反射有哪些使用场景)
+  - [12、Spring 框架中都用到了哪些设计模式](#12spring-框架中都用到了哪些设计模式)
+    - [a\>策略模式（Strategy Pattern）](#a策略模式strategy-pattern)
+    - [b\>工厂模式（Factory Pattern）](#b工厂模式factory-pattern)
+    - [c\>单例模式（Singleton Pattern）的使用场景](#c单例模式singleton-pattern的使用场景)
+  - [13、Spring 常用注解有哪些？](#13spring-常用注解有哪些)
+      - [1. @Autowired（最最最常用）](#1-autowired最最最常用)
+      - [2. @Component（及其衍生注解）](#2-component及其衍生注解)
+      - [3. @Configuration + @Bean](#3-configuration--bean)
+      - [4. @Bean](#4-bean)
+      - [5. @Service](#5-service)
+      - [6. @Repository](#6-repository)
+      - [7. @Controller / @RestController](#7-controller--restcontroller)
+  - [14、Spring 的事务什么时候会失效？（6 大经典失效场景）](#14spring-的事务什么时候会失效6-大经典失效场景)
+  - [15、Spring 的事务？](#15spring-的事务)
+    - [2025 年大厂最常用 4 种写法（直接抄，99% 场景够用）](#2025-年大厂最常用-4-种写法直接抄99-场景够用)
+    - [2025 年大厂必开的两个注解（不写就低级）](#2025-年大厂必开的两个注解不写就低级)
+    - [真实生产案例（我用过的）](#真实生产案例我用过的)
+    - [面试官最爱追问 + 秒杀答案](#面试官最爱追问--秒杀答案)
+    - [面试官：Spring 里发布事件是同步还是异步的？](#面试官spring-里发布事件是同步还是异步的)
+  - [16、Bean 的生命周期说一下？](#16bean-的生命周期说一下)
+    - [面试官最爱追问 + 标准秒杀回答](#面试官最爱追问--标准秒杀回答)
+  - [17、介绍一下SpringMVC](#17介绍一下springmvc)
+    - [黄金口述版（直接背，语速平稳，手画一个大箭头）](#黄金口述版直接背语速平稳手画一个大箭头)
+    - [2025 年面试必画的 9 大组件执行顺序](#2025-年面试必画的-9-大组件执行顺序)
+    - [2025 年大厂真实注解版（99% 项目都长这样）](#2025-年大厂真实注解版99-项目都长这样)
+    - [面试官最爱追问 + 秒杀回答](#面试官最爱追问--秒杀回答)
+    - [终极收尾金句（必须说，面试官直接满分）](#终极收尾金句必须说面试官直接满分)
+  - [18、Spring bean 的作用域有哪些？](#18spring-bean-的作用域有哪些)
+  - [19.Springboot自动装配是什么](#19springboot自动装配是什么)
+    - [1.核心注解：`@SpringBootApplication`](#1核心注解springbootapplication)
+    - [2.扫描机制：`@EnableAutoConfiguration` 的作用](#2扫描机制enableautoconfiguration-的作用)
+    - [3. 条件判断：`@Conditional` 系列注解](#3-条件判断conditional-系列注解)
+    - [4.最终结果：Bean 的创建](#4最终结果bean-的创建)
+  - [20、Springboot有什么启动器？](#20springboot有什么启动器)
+  - [21、@Conditional的工作原理（运行时动态决策）](#21conditional的工作原理运行时动态决策)
+  - [设计模式用的多吗？用了哪些？](#设计模式用的多吗用了哪些)
+  - [策略模式和工厂模式是怎么实现的？具体应用场景是什么？](#策略模式和工厂模式是怎么实现的具体应用场景是什么)
+  - [什么情况下会使用单例模式？](#什么情况下会使用单例模式)
+  - [单例模式的使用场景是什么？](#单例模式的使用场景是什么)
 - [网络](#网络)
   - [1. 浏览器对网页有缓存吗？缓存是如何存放的？](#1-浏览器对网页有缓存吗缓存是如何存放的)
   - [2.Cookie和session的联系与区别，cookie、session、分布式session](#2cookie和session的联系与区别cookiesession分布式session)
   - [3.如何保证TCP可靠传输](#3如何保证tcp可靠传输)
   - [4.什么是 SSO？什么是 JWT？SSO、JWT 和 Redis 登录的过程](#4什么是-sso什么是-jwtssojwt-和-redis-登录的过程)
+  - [5、死锁是什么？](#5死锁是什么)
+    - [死锁的四个必要条件（面试必考）](#死锁的四个必要条件面试必考)
+    - [死锁触发场景](#死锁触发场景)
 - [Redis](#redis)
   - [1.Redis单线程为什么性能高?](#1redis单线程为什么性能高)
   - [2.Redis 为什么可以保证线程安全？](#2redis-为什么可以保证线程安全)
   - [3.Redis的七大数据类型和底层数据结构？](#3redis的七大数据类型和底层数据结构)
+  - [4.Zset和set的区别？ZSet的底层原理是什么？](#4zset和set的区别zset的底层原理是什么)
+    - [a底层原理](#a底层原理)
+  - [5.为什么使用跳表而不是B+树？](#5为什么使用跳表而不是b树)
+  - [6.Redis的hash表是怎么扩容的？](#6redis的hash表是怎么扩容的)
+  - [7.Redis在哪些地方使用了多线程？为什么要使用](#7redis在哪些地方使用了多线程为什么要使用)
+    - [**为什么主线程还是单线程？为什么不把命令执行也多线程？（面试官必追问）**](#为什么主线程还是单线程为什么不把命令执行也多线程面试官必追问)
+  - [8.IO多路复用](#8io多路复用)
+    - [select](#select)
+    - [poll](#poll)
+    - [epoll](#epoll)
+      - [工作模式LT ET](#工作模式lt-et)
+        - [水平触发模式（LT模式） **支持阻塞读写和非阻塞读写**](#水平触发模式lt模式-支持阻塞读写和非阻塞读写)
+        - [边缘触发模式（ET模式）必须配合非阻塞IO，否则死锁](#边缘触发模式et模式必须配合非阻塞io否则死锁)
+  - [9. 如何实现redis的原子性](#9-如何实现redis的原子性)
+  - [10.除了LUA有没有其他办法实现redis原子性](#10除了lua有没有其他办法实现redis原子性)
+  - [11. redis怎么实现数据持久化](#11-redis怎么实现数据持久化)
+    - [1、rdb持久化](#1rdb持久化)
+    - [2、aof持久化](#2aof持久化)
+  - [12.删除策略和内存淘汰策略有什么区别？](#12删除策略和内存淘汰策略有什么区别)
+  - [13.介绍一下Redis 内存淘汰策略](#13介绍一下redis-内存淘汰策略)
+  - [14.过期键删除策略](#14过期键删除策略)
+  - [15.为什么不过期立即删除-需要定时器](#15为什么不过期立即删除-需要定时器)
+  - [16.Redis主从同步中的增量和完全同步怎么实现](#16redis主从同步中的增量和完全同步怎么实现)
+  - [17.redis主从和集群可以保证数据一致性吗](#17redis主从和集群可以保证数据一致性吗)
+  - [18、Redis 如何设置密码及验证密码？](#18redis-如何设置密码及验证密码)
+  - [19.集群方案](#19集群方案)
+    - [1、哨兵模式](#1哨兵模式)
+  - [20、官方Redis Cluster 方案(服务端路由查询)](#20官方redis-cluster-方案服务端路由查询)
+  - [21、为什么使用redis](#21为什么使用redis)
+  - [22、**Redis 分布式锁的实现原理？**](#22redis-分布式锁的实现原理)
+  - [23、**什么场景下用到分布式锁？**](#23什么场景下用到分布式锁)
+  - [24、**Redis 的 Key 问题是什么？**](#24redis-的-key-问题是什么)
+  - [25、**大 Key 问题的缺点？**](#25大-key-问题的缺点)
+  - [26、**Redis 大 Key 如何解决？**](#26redis-大-key-如何解决)
+  - [27、**什么是热 Key 问题？**](#27什么是热-key-问题)
+  - [28、**如何解决热 Key 问题？**](#28如何解决热-key-问题)
+  - [29、**如何保证 Redis 和 MySQL 数据强一致性问题？**](#29如何保证-redis-和-mysql-数据强一致性问题)
+  - [30、**缓存雪崩、击穿、穿透？怎么怎么解决？**](#30缓存雪崩击穿穿透怎么怎么解决)
+  - [31、**布隆过滤器原理介绍一下**](#31布隆过滤器原理介绍一下)
+  - [32、**如何设计秒杀系统？对 Redis 通常并发表现？**](#32如何设计秒杀系统对-redis-通常并发表现)
+  - [33、**Redis 过期策略 + 内存淘汰策略**](#33redis-过期策略--内存淘汰策略)
+  - [34、**Redis 持久化方式？优缺点？**](#34redis-持久化方式优缺点)
+  - [36、**Redis 哨兵和集群的区别**](#36redis-哨兵和集群的区别)
 - [RabbitMQ](#rabbitmq)
   - [1.RabbitMQ 的用途与结构](#1rabbitmq-的用途与结构)
   - [2.RabbitMQ 可靠性传输](#2rabbitmq-可靠性传输)
   - [3.rabbitmq exchange类型 有哪些类型](#3rabbitmq-exchange类型-有哪些类型)
-- [分布式和微服务](#分布式和微服务)
-  - [1.什么是分布式事务？分布式事务的解决方案？](#1什么是分布式事务分布式事务的解决方案)
-  - [2,分布式锁如何实现？RedLock算法](#2分布式锁如何实现redlock算法)
-    - [1\>**Redis 分布式锁**（最常用）](#1redis-分布式锁最常用)
-    - [2\>**Zookeeper 分布式锁**（强一致性）](#2zookeeper-分布式锁强一致性)
-    - [3\>**数据库分布式锁**（简单）](#3数据库分布式锁简单)
-    - [1. **什么是 RedLock？**](#1-什么是-redlock)
-    - [2.Redisson 框架](#2redisson-框架)
-    - [4：Redis 分布式锁为什么用 SETNX + EXPIRE 不安全？](#4redis-分布式锁为什么用-setnx--expire-不安全)
-    - [5：Redisson 怎么防止锁过期？](#5redisson-怎么防止锁过期)
-    - [6：Zookeeper 比 Redis 强在哪？](#6zookeeper-比-redis-强在哪)
-    - [7：RedLock 算法的核心步骤？](#7redlock-算法的核心步骤)
-    - [8：Redisson 是什么？它如何支持分布式锁？](#8redisson-是什么它如何支持分布式锁)
-    - [9：RedLock 的潜在问题？](#9redlock-的潜在问题)
 - [数据库](#数据库)
   - [1.什么时候考虑分库分表？](#1什么时候考虑分库分表)
   - [2.mysql为什么要用b+树，不用平衡二叉树做索引结构？B树和B+树有什么区别？](#2mysql为什么要用b树不用平衡二叉树做索引结构b树和b树有什么区别)
@@ -110,30 +249,254 @@
   - [6.如果一条SQL语句执行的很慢，怎么优化？](#6如果一条sql语句执行的很慢怎么优化)
   - [7.Mysql为什么没有使用hash索引？](#7mysql为什么没有使用hash索引)
   - [8.索引的匹配原则知道吗？](#8索引的匹配原则知道吗)
-  - [9.MySQL事务隔离级别？](#9mysql事务隔离级别)
-  - [10.Mysql的查询执行流程？更新执行流程？](#10mysql的查询执行流程更新执行流程)
-  - [11.Mysql有哪些存储引擎？什么区别？](#11mysql有哪些存储引擎什么区别)
-  - [12.数据库的表结构设计遵循哪些规则？](#12数据库的表结构设计遵循哪些规则)
-  - [13.UUID 与 Snowflake 对比？](#13uuid-与-snowflake-对比)
-    - [UUID 主键](#uuid-主键)
-    - [Snowflake](#snowflake)
-  - [二、UUID 做主键的 5 大硬伤](#二uuid-做主键的-5-大硬伤)
-  - [14.EXPLAIN 关键字段 type Extra代表什么](#14explain-关键字段-type-extra代表什么)
-    - [type 字段：**访问类型排名（从优到劣）**](#type-字段访问类型排名从优到劣)
-    - [Extra 字段：**额外操作（红灯预警）**](#extra-字段额外操作红灯预警)
+  - [16、执行计划看懂了吗？举个你优化过的索引例子](#16执行计划看懂了吗举个你优化过的索引例子)
+      - [1. 关键字段说明](#1-关键字段说明)
+      - [2. 执行计划分析示例](#2-执行计划分析示例)
+  - [17、数据库的三大范式是什么](#17数据库的三大范式是什么)
+  - [18、Mysql怎么连表查询？](#18mysql怎么连表查询)
+  - [19、Mysql怎么避免重复插入](#19mysql怎么避免重复插入)
+  - [扩展提问（面试官追问）](#扩展提问面试官追问)
+  - [20、两条update语句处理一张表的不同的主键范围的记录，一个\<10，一个\>15，会不会遇到阻塞？](#20两条update语句处理一张表的不同的主键范围的记录一个10一个15会不会遇到阻塞)
+  - [21、分库分表](#21分库分表)
+- [HANA](#hana)
+- [✅ 一、最常见基础题（必问）](#-一最常见基础题必问)
+    - [**1. HANA 和 MySQL / PostgreSQL 最大差别是什么？**](#1-hana-和-mysql--postgresql-最大差别是什么)
+    - [**2. HANA 的列存储和行存储区别？为什么你的表用列存？**](#2-hana-的列存储和行存储区别为什么你的表用列存)
+- [✅ 二、SQL 与 Schema 设计（中高级）](#-二sql-与-schema-设计中高级)
+    - [**3. HANA 主键使用 GUID 会不会影响性能？**](#3-hana-主键使用-guid-会不会影响性能)
+    - [**4. HANA 是如何做索引的？需要手动建索引吗？**](#4-hana-是如何做索引的需要手动建索引吗)
+    - [**5. HANA 如何做分区？你们业务有没有分区？**](#5-hana-如何做分区你们业务有没有分区)
+  - [✅ 三、性能优化（面试最爱问）](#-三性能优化面试最爱问)
+    - [**6. HANA 的 Delta Merge 是什么？你们如何处理写入性能问题？**](#6-hana-的-delta-merge-是什么你们如何处理写入性能问题)
+    - [**7. 你们是否做过 SQL 优化？如何在 HANA 中查看 SQL 性能？**](#7-你们是否做过-sql-优化如何在-hana-中查看-sql-性能)
+    - [**8. 如何优化 HANA 的大表查询？**](#8-如何优化-hana-的大表查询)
+      - [1.减少跨节点 Join (Reduce Cross-Node Joins)](#1减少跨节点-join-reduce-cross-node-joins)
+      - [2.避免 Calculation View 里深层嵌套 (Avoid Deep Nesting in Calculation Views)](#2避免-calculation-view-里深层嵌套-avoid-deep-nesting-in-calculation-views)
+      - [3.谨慎使用 Left Join / Full Join (Use Left Join / Full Join Cautiously)](#3谨慎使用-left-join--full-join-use-left-join--full-join-cautiously)
+      - [4.利用列存过滤和投影 (Leverage Column Store Filtering and Projection)](#4利用列存过滤和投影-leverage-column-store-filtering-and-projection)
+      - [5.分区消除（Partition Pruning）](#5分区消除partition-pruning)
+  - [✅ 四、并发与锁（很容易问到）](#-四并发与锁很容易问到)
+    - [**9. HANA 的锁机制是什么？（MVCC）**](#9-hana-的锁机制是什么mvcc)
+      - [HANA 的锁类型（4 大类）](#hana-的锁类型4-大类)
+        - [**1. Row Lock（行锁）——最核心**](#1-row-lock行锁最核心)
+        - [**2. Table Lock（表锁）**](#2-table-lock表锁)
+        - [**3. Metadata Lock（元数据锁）**](#3-metadata-lock元数据锁)
+        - [**4. Version Lock（版本锁）- MVCC 核心**](#4-version-lock版本锁--mvcc-核心)
+    - [**10. HANA 支持分布式事务吗？你们项目有没有？**](#10-hana-支持分布式事务吗你们项目有没有)
+  - [✅ 五、微服务 \& HANA 整合问题（与你们项目强相关）](#-五微服务--hana-整合问题与你们项目强相关)
+    - [**11. SpringBoot + HANA 的连接池怎么配置？**](#11-springboot--hana-的连接池怎么配置)
+    - [**12. 你们在 HANA 中是否使用视图（Calculation View）？**](#12-你们在-hana-中是否使用视图calculation-view)
+  - [13、HANA 如何处理读写冲突？](#13hana-如何处理读写冲突)
+  - [**（1）读不阻塞写、写不阻塞读**](#1读不阻塞写写不阻塞读)
+  - [**（2）写写冲突 → 只有一个写成功（排他锁）**](#2写写冲突--只有一个写成功排他锁)
+  - [15、HANA 避免幻读与写冲突的方式](#15hana-避免幻读与写冲突的方式)
+    - [**MVCC（多版本读）+ OCC（乐观冲突检测）**](#mvcc多版本读-occ乐观冲突检测)
+    - [1\>HANA 如何避免 **幻读**（Phantom Read）](#1hana-如何避免-幻读phantom-read)
+      - [1. 多版本快照（Snapshot / Read View）](#1-多版本快照snapshot--read-view)
+      - [2. 读不阻塞写 / 写不阻塞读](#2-读不阻塞写--写不阻塞读)
+    - [2\>HANA 如何避免 **幻写**（写冲突 / Phantom Write）](#2hana-如何避免-幻写写冲突--phantom-write)
+      - [1. 行级写锁（Exclusive Lock）](#1-行级写锁exclusive-lock)
+      - [2. 乐观并发 / 写冲突检测（基于版本验证）](#2-乐观并发--写冲突检测基于版本验证)
+  - [16、「你们为什么要用 HANA，而不是 MySQL？」](#16你们为什么要用-hana而不是-mysql)
+  - [17、HANA查询怎么优化](#17hana查询怎么优化)
+    - [1. **HANA 优化策略**](#1-hana-优化策略)
+      - [✅ 1.1 降低扫描量（列存数据库最核心）](#-11-降低扫描量列存数据库最核心)
+      - [✅ 1.2 使用 HANA 列存索引（非传统 B+Tree！）](#-12-使用-hana-列存索引非传统-btree)
+      - [✅ 1.3 JOIN 优化（高频面试）](#-13-join-优化高频面试)
+      - [✅ 1.4 并行执行与分区（HANA 强项）](#-14-并行执行与分区hana-强项)
+    - [HANA 支持：](#hana-支持)
+      - [✅ 1.5 SQL 写法优化（非常实用）](#-15-sql-写法优化非常实用)
+        - [❌ Avoid](#-avoid)
+        - [✅ Use](#-use)
+      - [✅ 1.6 Calculation View（CV）调优](#-16-calculation-viewcv调优)
+      - [✅ 1.7 避免隐式类型转换（HANA 常见性能杀手）](#-17-避免隐式类型转换hana-常见性能杀手)
+      - [✅ 1.8 统计信息（Column Stats）](#-18-统计信息column-stats)
+    - [2. **面试官爱问的深入原理版**](#2-面试官爱问的深入原理版)
+      - [⚙ HANA 为什么对 join 和过滤特别敏感？](#-hana-为什么对-join-和过滤特别敏感)
+    - [3. 面试官扩展追问（附标准回答）](#3-面试官扩展追问附标准回答)
+      - [❓ Q1：HANA 需要建 B+Tree 索引吗？](#-q1hana-需要建-btree-索引吗)
+      - [❓ Q2：HANA 为何不怕大表？](#-q2hana-为何不怕大表)
+      - [❓ Q3：为什么 Calculation View 常打不过 SQL？](#-q3为什么-calculation-view-常打不过-sql)
+  - [18、HANA事务隔离级别？怎么解决的不可重复读？](#18hana事务隔离级别怎么解决的不可重复读)
+- [Kafka](#kafka)
+  - [一、 Kafka 基础概念](#一-kafka-基础概念)
+    - [**1. 什么是 Kafka？它主要用在哪里？**](#1-什么是-kafka它主要用在哪里)
+    - [**2. Kafka 中的 Producer、Consumer、Broker、Topic、Partition 分别是什么？**](#2-kafka-中的-producerconsumerbrokertopicpartition-分别是什么)
+    - [**3. 为什么 Kafka 速度快？**](#3-为什么-kafka-速度快)
+  - [二、 消息投递与可靠性](#二-消息投递与可靠性)
+    - [**4. Kafka 如何保证消息不丢失（可靠性）？**](#4-kafka-如何保证消息不丢失可靠性)
+    - [**5. Kafka 如何保证消息的顺序性？**](#5-kafka-如何保证消息的顺序性)
+    - [**6. 什么是消费者组（Consumer Group）？它的作用是什么？**](#6-什么是消费者组consumer-group它的作用是什么)
+    - [**7. 消息重复消费是怎么回事？如何避免？**](#7-消息重复消费是怎么回事如何避免)
+  - [三、 架构与部署](#三-架构与部署)
+    - [**8. Kafka 使用 Zookeeper 吗？它的作用是什么？**](#8-kafka-使用-zookeeper-吗它的作用是什么)
+    - [**9. 如何处理 Kafka 积压（Lagging）问题？**](#9-如何处理-kafka-积压lagging问题)
+  - [四、 Java 客户端实践](#四-java-客户端实践)
+    - [**10. Spring Boot 如何集成 Kafka？主要使用哪些注解和配置？**](#10-spring-boot-如何集成-kafka主要使用哪些注解和配置)
+  - [11、Rebalance（重平衡）](#11rebalance重平衡)
+    - [1\>ENABLE\_AUTO\_COMMIT\_CONFIG](#1enable_auto_commit_config)
+    - [2\>为什么这个策略可行且推荐？](#2为什么这个策略可行且推荐)
+    - [3\>增加会话超时时间减少不必要的 Rebalance](#3增加会话超时时间减少不必要的-rebalance)
+- [分布式和微服务](#分布式和微服务)
+  - [1.什么是分布式事务？分布式事务的解决方案？](#1什么是分布式事务分布式事务的解决方案)
+  - [2,分布式锁如何实现？RedLock算法](#2分布式锁如何实现redlock算法)
+    - [1\>**Redis 分布式锁**（最常用）](#1redis-分布式锁最常用)
+  - [方案 1：Redisson](#方案-1redisson)
+  - [方案 2：使用 RedLock 算法](#方案-2使用-redlock-算法)
+    - [2\>**Zookeeper 分布式锁**（强一致性）](#2zookeeper-分布式锁强一致性)
+    - [3\>**数据库分布式锁**（简单）](#3数据库分布式锁简单)
+    - [1. **什么是 RedLock？**](#1-什么是-redlock)
+    - [2.Redisson 框架](#2redisson-框架)
+    - [4：Redis 分布式锁为什么用 SETNX + EXPIRE 不安全？](#4redis-分布式锁为什么用-setnx--expire-不安全)
+    - [5：Redisson 怎么防止锁过期？](#5redisson-怎么防止锁过期)
+    - [6：Zookeeper 比 Redis 强在哪？](#6zookeeper-比-redis-强在哪)
+    - [7：RedLock 算法的核心步骤？](#7redlock-算法的核心步骤)
+    - [8：Redisson 是什么？它如何支持分布式锁？](#8redisson-是什么它如何支持分布式锁)
+    - [9：RedLock 的潜在问题？](#9redlock-的潜在问题)
 - [架构和设计模式](#架构和设计模式)
   - [1.rpc框架如何实现？](#1rpc框架如何实现)
   - [2.服务提供方有节点挂了怎么办？](#2服务提供方有节点挂了怎么办)
   - [3.服务调用方怎么知道服务不可用了？](#3服务调用方怎么知道服务不可用了)
   - [4.怎么实现的类似本地调用？](#4怎么实现的类似本地调用)
+  - [5、怎么实现接口幂等性？](#5怎么实现接口幂等性)
+  - [扩展提问（面试官追问）](#扩展提问面试官追问-1)
 - [算法](#算法)
   - [1.遍历](#1遍历)
   - [2.最小生成树](#2最小生成树)
+- [EMS](#ems)
+    - [项目名称（简历 \& 自我介绍必写，霸气专业）](#项目名称简历--自我介绍必写霸气专业)
+    - [一句话总述（开场 15 秒，直接秒杀面试官）](#一句话总述开场-15-秒直接秒杀面试官)
+      - [1. 项目背景 \& 定位（30 秒）](#1-项目背景--定位30-秒)
+      - [2. 核心架构（手画这张图，1 分钟画完，面试官直接惊了）](#2-核心架构手画这张图1-分钟画完面试官直接惊了)
+      - [3. 我负责的最核心两块（重中之重，讲 4~5 分钟，数据说话）](#3-我负责的最核心两块重中之重讲-45-分钟数据说话)
+      - [4. 多租户实现（面试官最爱问，轻松秒杀）](#4-多租户实现面试官最爱问轻松秒杀)
+      - [5. 可靠性 \& 可观测性（加分项）](#5-可靠性--可观测性加分项)
+    - [结尾金句（面试官听了直接跪）](#结尾金句面试官听了直接跪)
+    - [怎么操作HANA数据库？](#怎么操作hana数据库)
+    - [真实核心代码片段（Query V2 / Update V2 就是这么写的）](#真实核心代码片段query-v2--update-v2-就是这么写的)
+    - [面试无敌回答模板（直接背，100% 面试官跪）](#面试无敌回答模板直接背100-面试官跪)
+    - [面试官：你们对 HANA 操作为什么不用 MyBatis？不是说 MyBatis 更灵活吗？](#面试官你们对-hana-操作为什么不用-mybatis不是说-mybatis-更灵活吗)
+    - [面试无敌回答模板（直接背，99% 面试官当场跪）](#面试无敌回答模板直接背99-面试官当场跪)
+  - [1.为什么使用GUID-UUID v4](#1为什么使用guid-uuid-v4)
+  - [2.线程池](#2线程池)
+  - [1️⃣ Spring Boot 常用线程池场景](#1️⃣-spring-boot-常用线程池场景)
+  - [2️⃣ 典型线程池配置示例（Spring Boot）](#2️⃣-典型线程池配置示例spring-boot)
+  - [3️⃣ 项目中线程池使用场景总结](#3️⃣-项目中线程池使用场景总结)
+
 
 # [目录](https://maochunguang.github.io/java-interview/interview_topn/toutiao.html#%E6%8A%80%E6%9C%AF%E7%82%B9%E6%B1%87%E6%80%BB)
 
 [TOC]
 
+# JavaScript 基础
+
+## 事件循环（Event Loop）详细解释一下，宏任务微任务分别有哪些？Promise 属于微任务还是宏任务？
+
+- **同步任务**：在主线程上执行，形成执行栈（Call Stack）。
+- **Event Loop 流程**：
+
+1. 执行主线程所有同步代码。
+2. 执行完后，检查**微任务队列**。
+3. **清空**所有微任务（同步执行）。
+4. 如果需要渲染，执行浏览器渲染流程。
+5. 检查**宏任务队列**。
+6. **取出一个**宏任务执行。
+7. 重复步骤 2-6（循环）。
+
+- **宏任务 (Macrotasks/Tasks)**：`setTimeout`, `setInterval`, `setImmediate`(IE/Node), I/O 操作, UI 渲染, `postMessage`, Node.js 的 `fs` 模块操作。
+- **微任务 (Microtasks)**：`Promise.then/catch/finally`, `MutationObserver` (DOM 变动观察), Node.js 的 `process.nextTick`。
+- **Promise 属于微任务**：Promise 的执行体（Executor）是同步执行的，但 `.then()`、`.catch()`、`.finally()` 注册的回调是微任务。
+
+
+
+## async/await 的底层实现原理？和 Promise 的关系？出现异常怎么捕获？
+
+async/await` 是 `Promise` 和 `Generator` 的语法糖，以同步方式书写异步代码。
+async` 函数返回一个 Promise 对象。`await` 关键字用于等待 Promise 解决，如果 Promise 被拒绝，则抛出异常。
+
+`async/await` 的底层实现类似一个状态机，基于 `Generator` 函数和自动执行器（如 TJ 的 `co` 库）：
+
+- `async` 函数体内的 `await` 相当于 `Generator` 的 `yield`，暂停执行。
+- 执行器负责推进 `Generator`（`next()`），并将 `yield` 后面的 Promise 链式执行。
+- 当 Promise 解决后，执行器恢复 `Generator`，并将结果作为 `await` 的返回值。
+
+## 闭包的实际应用场景？如何避免内存泄漏？
+
+闭包依赖于 JS 的作用域链和垃圾回收机制（GC）。GC 通常在函数执行完且没有引用指向其作用域时回收内存。闭包通过保持外部作用域的引用，阻止了 GC 回收外部变量。
+
+**应用场景**：
+
+- **私有变量/封装模块**：模拟私有属性，实现面向对象。
+- **柯里化（Currying）/函数式编程**：创建预设参数的函数。
+- **防抖/节流**：保存定时器 ID 和状态。
+- **事件监听器中的回调**：回调函数持有外部变量（如事件 ID）。
+
+**避免内存泄漏**：
+
+- **主动解除引用**：在使用完毕后，手动将持有闭包引用的变量设为 `null`。
+- **使用 `removeEventListener`**：对于事件监听器，确保在组件销毁时移除监听器。
+- **避免在闭包中引用大型 DOM 元素**：容易造成循环引用。
+
+## 原型链、**proto**、prototype 的区别？手写一个简易的 new 操作符
+
+- 如何判断一个对象是另一个对象的实例？（`instanceof` 或 `Object.getPrototypeOf()`）
+- 顶层原型是什么？（`Object.prototype`）
+
+- **`prototype`**：**只有函数拥有**的属性。它指向一个对象，这个对象就是该构造函数创建的实例的原型。存放实例共享的方法和属性。
+- **`__proto__`**：**所有对象都拥有**的属性（现代 JS 中应使用 `Object.getPrototypeOf()`）。它指向创建该对象的构造函数的 `prototype`。
+- **原型链 (Prototype Chain)**：由一系列通过 `__proto__` 连接起来的原型对象组成。当访问对象属性或方法时，如果对象本身没有，就会沿着 `__proto__` 链向上查找，直到找到或到达链顶（`Object.prototype`，其 `__proto__` 为 `null`）。
+
+## 手写防抖和节流（必须手撕）
+
+- **防抖 (Debounce)**：核心是维护一个定时器 `timerId`。每次事件触发时，都先清除前一个定时器，再设置一个新的定时器。确保只有最后一次触发的事件生效。
+- **节流 (Throttle)**：核心是维护一个标志位 `canRun` 或记录上次执行时间 `lastTime`。确保在指定时间间隔内，函数只执行一次。
+
+
+
+
+
+## let、const、var 的区别？暂时性死区了解吗？
+
+- **`var`**：
+- **作用域**：函数作用域或全局作用域。
+- **变量提升 (Hoisting)**：声明会被提升到作用域顶部，但赋值留在原地（默认 `undefined`）。
+- **`let`**：
+- **作用域**：块级作用域（`{}` 内部）。
+- **无提升/暂时性死区 (TDZ)**：声明不会被提升。在块作用域内，从进入作用域开始到 `let` 声明语句执行前，访问该变量会抛出 `ReferenceError`。
+- **`const`**：
+- **作用域**：块级作用域。
+- **无提升/TDZ**：与 `let` 相同。
+- **不可变性**：声明后必须立即赋值，且不能再次赋值（指针不可变）。但如果指向的是对象或数组，其内部属性是可变的。
+
+
+
+# Node.js 核心模块与原理
+
+## require 加载模块的完整过程？CommonJS 和 ES Module 的区别与如何共存？
+
+## Node.js 是单线程还是多线程？那它怎么处理高并发？
+
+## 进程和线程的区别？child_process 的四种方式分别什么场景用？
+
+## cluster 模块原理是什么？如何实现负载均衡？
+
+## Buffer 和 String 的区别？Buffer.concat 实现原理？
+
+## Stream 四种流的区别？可读流有哪两种模式？背压机制怎么解决？
+
+# Express/Koa/NestJS 中间件机制
+
+## Express 和 Koa 的最大区别？Koa 中间件洋葱模型手绘执行顺序
+
+## 手写一个简易的 Koa 中间件（比如日志、鉴权）
+
+## NestJS 的依赖注入和 AOP 怎么实现的？拦截器、守卫、管道的执行顺序？
+
+
+
+
+
+# Java
 
 ## 1.进程和线程的区别？使用线程这能节约时间吗？
 
@@ -1964,23 +2327,52 @@ CounterCell避免单一AtomicLong的缓存行伪共享和CAS竞争瓶颈。**优
 | **原因** | 物理空间不足                 | 存在无效但未释放的引用           |
 | **关系** | 内存泄漏的**结果**是内存溢出 | 内存溢出可能是内存泄漏**导致**的 |
 
+## 55、reentrantlock和reentrantreadwritelock的区别
+
+| 特性           | `ReentrantLock`                       | `ReentrantReadWriteLock`                           |
+| :------------- | :------------------------------------ | :------------------------------------------------- |
+| **锁类型**     | 排他锁 (独占锁)                       | 读写锁 (读共享，写独占)                            |
+| **并发性**     | 低。任何操作都互斥。                  | 高。允许多个线程同时读。                           |
+| **内部锁结构** | 单一的 `Lock` 对象                    | 两个嵌套的 `Lock` 对象 (`ReadLock` 和 `WriteLock`) |
+| **适用场景**   | 读写均衡，或写操作频繁                | **读操作远多于写操作**                             |
+| **性能提升**   | 提供互斥性，性能类似于 `synchronized` | 在高并发读场景下性能显著优于 `ReentrantLock`       |
+
+ReentrantLock 是独占锁，一次只允许一个线程访问共享资源，适用于写操作多或读写混合但不关注读并发的场景。
+ReentrantReadWriteLock 是读写锁，允许多个线程同时读，提高读多写少场景的并发性能，写操作独占。当我们有大量读操作且写操作相对较少时，使用读写锁可以显著提高吞吐量。但在写操作频繁时，读写锁可能导致写线程长时间等待，所以需要根据场景选择。
+
+
+
 # JVM
 
 ## 1.谈谈多态，多态的底层原理
 
-**多态** = **编译时类型** 与 **运行时类型** 不一致，通过 **方法重写（Override）** 实现。 
+Java 多态
 
-多态的 3 个必要条件（缺一不可）
+- 同一个引用类型，调用同一个方法时，根据实际引用的**对象类型**不同，执行不同的实现。分为编译时多态（方法重载）和运行时多态（方法重写）。面试官主要想问的是**运行时多态**。
+- 实现依赖于**继承/接口**、**方法重写**和 **JVM 的动态方法调用机制**，其核心是使用**虚方法表 (vtable)** 查找实际要执行的方法，实现**运行时绑定**（动态绑定）。
 
-1. **继承或实现关系**（子类继承父类 / 实现接口）
-2. **方法重写**（子类重写了父类/接口的方法）
-3. **父类引用指向子类对象**（向上转型）
+
 
 **底层原理**：
 
 - **JVM 动态分派** → invokevirtual 指令
 - **虚函数表（vtable）** → 每个类有一个，存放方法地址
 - **运行时查找** → 根据对象实际类型查 vtable → 调用正确方法
+
+**方法调用指令**：JVM 在执行方法调用时，主要依赖四条指令：`invokestatic`（静态方法）、`invokespecial`（私有、构造、父类方法）、`invokeinterface`（接口方法）和**`invokevirtual`**（**核心，用于虚方法调用**）。
+
+**虚方法表 (Virtual Method Table / vtable)**：
+
+- 每个**类**在加载到内存后，会维护一张**虚方法表 (vtable)**。
+- 表中存放着类中所有**虚方法**（非 `private`、`static`、`final`、构造方法）的**实际入口地址**。
+- **继承与重写**：当子类重写了父类的方法时，子类 vtable 中对应位置的**方法地址**会被替换为子类自己的实现。如果子类没有重写，则指向父类的实现。
+
+**动态调用过程**：
+
+1. 执行 `invokevirtual` 指令。
+2. JVM 确定调用者的**实际类型**（而不是引用类型）。
+3. 通过对象的内存地址找到其**类数据**结构，并定位到**虚方法表 (vtable)**。
+4. 根据方法在 vtable 中的**固定偏移量**（索引），查找并执行该地址指向的**实际方法**。
 
 ## 2.CAS的底层原理，synchonized的底层原理
 
@@ -2546,6 +2938,12 @@ Spring 使用反射来实现其核心特性：依赖注入。
 
 ## 13、Spring 常用注解有哪些？
 
+| **注解**                       | **作用/原理**                                                | **陷阱分析**                                                 |
+| ------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **`@SpringBootConfiguration`** | 继承自 `@Configuration`，表明当前类是一个配置类，用于加载 Spring Context。 | **陷阱**：面试官问为什么不用 `@Configuration`？回答：为了使配置类更容易被定位和单元测试。 |
+| **`@EnableAutoConfiguration`** | 开启 Spring Boot 的**自动配置机制**。它会扫描 classpath 下所有的 `META-INF/spring.factories` 文件中的配置类，并根据**条件注解**（如 `@ConditionalOnClass`）来决定是否加载这些配置。 | **核心**：这是实现“约定大于配置”的关键。根据 classpath 中是否有某些类来决定启用哪些配置。 |
+| **`@ComponentScan`**           | 默认扫描当前配置类所在的包及其子包下的组件（如 `@Controller`, `@Service` 等）。 | **陷阱**：如果主启动类不在根包，有些组件可能扫描不到。**解决**：将主启动类放在项目根包，或手动指定扫描路径。 |
+
 #### 1. @Autowired（最最最常用）
 - 主要用于自动装配 Bean。当 Spring 容器中存在与要注入的属性类型匹配的 Bean 时，它会自动将 Bean 注入到属性中。就跟我们 new 对象一样。
 - 用法最简单，如下示例代码：
@@ -3050,13 +3448,97 @@ Spring Boot 自动装配 = 根据你 jar 包里有什么，自动把常用组件
    - 如果 `matches()` 返回 `true`，则 Spring 容器**继续加载**这个配置类或 Bean。
    - 如果 `matches()` 返回 `false`，则 Spring 容器会**完全跳过**这个配置，就像它从未存在过一样。
 
-## 设计模式用的多吗？用了哪些？
+## 22、支持的内嵌容器
 
-## 策略模式和工厂模式是怎么实现的？具体应用场景是什么？
+Spring Boot 主要支持三种内嵌 Servlet 容器，并对应不同的 Starter 依赖：
 
-## 什么情况下会使用单例模式？
+1. **Tomcat** (默认)
+   - Starter：`spring-boot-starter-web`（默认包含）
+2. **Jetty**
+   - Starter：`spring-boot-starter-jetty`
+3. **Undertow**
+   - Starter：`spring-boot-starter-undertow`
 
-## 单例模式的使用场景是什么？
+## 23、想手动配置一个 Bean，但又不希望 Spring Boot 的自动配置生效，怎么办？
+
+### 方式一：利用 `ConditionalOnMissingBean` (推荐)
+
+这是 Spring Boot 设计自动配置时的**核心原则**。Spring Boot 的所有自动配置类在注册 Bean 时，几乎都使用了以下条件注解：
+
+- `@ConditionalOnMissingBean(name = "xxxBeanName")`
+- `@ConditionalOnMissingBean(type = Xxx.class)`
+
+**原理：**
+
+1. 当 Spring Boot 扫描到自动配置类时，它会检查容器中**是否已经存在**相同类型或名称的 Bean。
+2. 如果**容器中已经存在**您手动配置的 Bean，那么 `@ConditionalOnMissingBean` 的条件判断为 **`false`**。
+3. 因此，整个自动配置类就不会执行，Spring Boot 就会放弃注册它默认提供的那个 Bean。
+
+**示例：** 假设要手动配置一个 `DataSource`，自动配置类是 `DataSourceAutoConfiguration`。该类中注册 `DataSource` 的方法使用了 `@ConditionalOnMissingBean(DataSource.class)`。
+
+```
+// 1. 手动配置类 (通常放在主启动类扫描的包内)
+@Configuration
+public class MyCustomConfig {
+
+    // 这个 Bean 会被 Spring 容器注册
+    @Bean
+    public CustomService customService() {
+        System.out.println(">>> 正在使用手动配置的 CustomService");
+        return new CustomService();
+    }
+}
+
+// 2. 假设 Spring Boot 有一个自动配置类 (我们不需要去写这个类，这是SpringBoot内部的)
+/*
+@Configuration
+@ConditionalOnMissingBean(CustomService.class) // Spring Boot的自动配置有此条件
+public class CustomServiceAutoConfiguration {
+    @Bean
+    public CustomService customService() {
+        return new DefaultCustomService(); // 只有当容器中没有CustomService时才会执行
+    }
+}
+*/
+class CustomService {}
+```
+
+
+
+### 方式二：显式排除自动配置类 (通过 `exclude`)
+
+通过告诉 Spring Boot 启动器：**不要加载**某个特定的自动配置类。
+
+- **原理：** 直接在主启动类上使用 `exclude` 属性，让 Spring Boot 在启动阶段完全忽略掉对应的自动配置类，根本不进行加载和判断。
+
+如果假设 Spring Boot 有一个名为 `DataSourceAutoConfiguration` 的自动配置类：
+
+```
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.context.annotation.Configuration;
+
+// 在主启动类上明确排除
+@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
+public class ApplicationRoot {
+    public static void main(String[] args) {
+        // ...
+    }
+}
+
+// 在其他配置类中手动配置数据源（此时自动配置已被禁用）
+@Configuration
+class MyManualDataSourceConfig {
+    // 必须自己手动配置 DataSource Bean
+    // @Bean
+    // public DataSource dataSource() { ... }
+}
+```
+
+追问变种（面试官常问）：
+
+- **变种1：如何禁用所有的自动配置？**
+  - **回答**：将 `@EnableAutoConfiguration` 的功能关闭即可。即：将 `@SpringBootApplication` 替换为它包含的另外两个注解：`@Configuration` 和 `@ComponentScan`。
 
 
 
@@ -4941,6 +5423,123 @@ Calculation View 最好用 **Column Engine**，不要触发 **Join Engine / OLAP
 SAP HANA 在 READ COMMITTED 下仍然能避免大多数不可重复读，因为它基于 MVCC 和 statement-level snapshot 实现一致性读取，同时结合 predicate locking 避免范围被更新。
  和传统数据库相比，HANA 的 RC 隔离效果更接近 RR。
 
+## 19、HANA 防止 SQL injection 
+
+最推荐：
+
+- PreparedStatement
+
+- 绑定参数
+
+- 永远不要拼接用户输入
+
+  
+
+# ClickHouse
+
+“ClickHouse NoSQL” 这个说法在技术圈经常出现，但其实是一个容易让人混淆的表述。下面给你彻底讲清楚到底是怎么回事，以及真实面试中会怎么被问到。
+
+## ClickHouse 到底是 NoSQL 还是 SQL？
+官方正确的定义：
+- ClickHouse 是一个列式存储的分布式实时分析数据库（OLAP DBMS）
+- 它完全支持标准 SQL（比 MySQL 还标准，支持几乎所有 SQL-92 标准 + 扩展）
+- 所以它本质上是 SQL 数据库，不是 NoSQL
+
+为什么很多人叫它 “ClickHouse NoSQL”？
+因为它具备很多 NoSQL 数据库的典型特征：
+- 极致的查询性能（单表百亿数据秒级返回）
+- 水平扩展能力强（可以轻松做到几百台集群）
+- 弱化了事务支持（只支持最终一致性，不支持多行事务）
+- 不适合高频点查和频繁更新删除（和典型 NoSQL 一样）
+- 支持 JSON、Array、Map 等半结构化类型
+→ 所以很多人把它当成“具备 NoSQL 能力的 SQL 数据库”，简称“ClickHouse NoSQL”
+
+一句话总结：
+ClickHouse = 列式存储 + 标准 SQL + NoSQL 级别的性能和扩展能力
+
+## Q1：ClickHouse 属于 NoSQL 数据库吗？为什么？
+标准答案：
+不是严格意义上的 NoSQL。ClickHouse 是支持完整 SQL 的列式 OLAP 数据库。
+但它具备 NoSQL 的很多特性：
+- 不支持事务（只有单条 INSERT 原子性）
+- 不支持 UPDATE/DELETE（只能通过 Mutation 异步变更）
+- 极致追求查询性能而牺牲了写入灵活性
+- 天生分布式，支持线性扩展
+所以业界常说它是“最像 NoSQL 的 SQL 数据库”，或者“SQL 接口的分析型 NoSQL”。
+
+## Q2：ClickHouse 和 Elasticsearch、Druid、Doris、Kudu 对比有什么区别？
+| 数据库        | 查询速度 | 支持 SQL    | 实时写入 | 更新删除   | 典型场景                   |
+| ------------- | -------- | ----------- | -------- | ---------- | -------------------------- |
+| ClickHouse    | 最快     | 完整        | 支持     | 几乎不支持 | 日志、指标、报表、实时分析 |
+| Elasticsearch | 中等     | 有限        | 支持     | 支持       | 全文搜索、日志检索         |
+| Druid         | 快       | 有限        | 支持     | 不支持     | 时序数据、实时仪表盘       |
+| Doris         | 快       | 完整        | 支持     | 支持       | 替代 Hive 的报表平台       |
+| Kudu          | 较慢     | 通过 Impala | 支持     | 支持       | 随机读写场景               |
+
+ClickHouse 目前在聚合查询性能上基本全面碾压其他所有竞品（2025年仍然如此）。
+
+## Q3：ClickHouse 的核心引擎有哪些？哪个最常用？
+常见表引擎家族：
+1. MergeTree 家族（90%+ 场景使用）
+   - ReplicatedMergeTree（生产必用，支持高可用）
+   - ReplacingMergeTree（去重表）
+   - AggregatingMergeTree（物化视图专用）
+   - CollapsingMergeTree / VersionedCollapsingMergeTree（极少用）
+2. Log 家族（轻量级，小数据量测试用）
+3. Integration 家族（Kafka、MySQL、HDFS 等）
+4. Special 家族（Dictionary、MaterializedView 等）
+
+生产环境 99% 的表都是 ReplicatedMergeTree。
+
+## Q4：ClickHouse 如何实现高可用？Zookeeper 是必须的吗？
+2025 年最新答案：
+- 旧方案（2022年之前）：依赖 ZooKeeper 做副本同步（ReplicatedMergeTree）
+- 新方案（2023年开始推广，2025年已成为主流）：ClickHouse Keeper（自研，去 ZooKeeper 化）
+- 最新版本（24.x+）已经可以完全不依赖外部 ZooKeeper
+
+高可用架构：
+- 至少 3 台 ClickHouse + 3 台 ClickHouse Keeper（或 ZooKeeper）
+- 数据多副本存储（replicas=2）
+- 使用分布式表（Distributed 引擎）做负载均衡 + 故障转移
+
+## Q5：ClickHouse 为什么这么快？（必考高频题）
+8 大核心原因（面试必须背熟）：
+1. 列式存储 + 稀疏索引
+2. 向量化执行引擎（SIMD 指令）
+3. 数据压缩（默认 LZ4 / ZSTD）
+4. MergeTree 的有序主键 + 稀疏索引 + 数据分片（part）
+5. 内存 + CPU 极致优化（跳过不必要的列）
+6. 多线程并行处理（每个查询自动使用所有 CPU 核心）
+7. 跳表（Skip Index）+ 数据分区裁剪
+8. 背景 Merge 机制（写入不阻塞查询）
+
+## Q6：ClickHouse 适合做什么？不适合做什么？
+适合：
+- 海量数据聚合分析（百亿+ 行）
+- 日志分析、监控指标、BI 报表
+- 实时数仓、用户行为分析
+- 广告点击流、IoT 时序数据
+
+不适合：
+- 高频点查（主键查询慢）
+- 频繁 UPDATE/DELETE
+- 事务要求强（金融核心交易场景）
+- 单条写入延迟要求 <10ms（建议批量写入）
+
+## Q7：如何优化 ClickHouse 查询性能？（实操题）
+常见优化手段（至少说出 5 条）：
+1. 必建主键（ORDER BY）并合理排序
+2. 使用分区（PARTITION BY toYYYYMM(date)）
+3. 建物化视图预聚合
+4. 使用投影（Projection）替代宽表
+5. 使用跳表索引（skip index）
+6. 查询加 WHERE 过滤条件（利用分区裁剪和索引）
+7. 使用 Distributed 表负载均衡
+8. 调整 max_threads、max_memory_usage 参数
+
+### 总结：面试时如何表达更专业
+“ClickHouse 虽然支持完整的 SQL，但从架构设计和使用限制来看，它更像是一个面向分析场景的 NoSQL 数据库。它牺牲了事务和更新能力，换来了极致的聚合性能和水平扩展能力，所以我认为它是一个‘披着 SQL 外衣的 NoSQL 数据库’。”
+
 
 
 # Kafka 
@@ -5683,5 +6282,172 @@ container.setMaxConcurrentConsumers(20);
 > 面试中可以表述：
 >  “项目中对异步任务、批量处理、消息消费都配置了专用线程池，通过合理设置核心/最大线程数、队列容量和拒绝策略，保证高并发下系统稳定性和吞吐量，同时避免阻塞主线程或数据库压力过大。”
 
+## 1.怎么防止XSS攻击
+
+在处理用户上传的富文本内容时，防范跨站脚本 (XSS) 攻击需要采取多层次的防御策略。核心原则是**绝不信任任何用户输入**，并从输入、存储到输出环节都进行严格处理。
+
+以下是防止富文本中 XSS 攻击的关键措施：
+
+1. 内容净化 (HTML Sanitization) —— 核心防御
+
+这是处理富文本内容**最关键**的步骤。富文本允许特定的 HTML 标签和属性，但必须剥离所有潜在恶意的内容（例如 `<script>` 标签、`onerror` 或 `onload` 等事件处理属性）。
+
+- **使用成熟的净化库:** 不要自己编写净化代码。应使用业界公认、维护良好的安全库。
+  - **前端:** 推荐使用开源库 DOMPurify。它可以在浏览器端对 HTML 进行净化，提供第一道防线。
+  - **后端:** 为了实现深度防御，必须在服务器端再次进行净化。根据你的后端语言选择合适的库，例如 Java 中的 OWASP Java HTML Sanitizer 或 PHP 中的 HTML Purifier。
+- **白名单原则 (Whitelisting):** 这些库应配置为**仅允许**安全的标签（如 `<b>`, `<i>`, `<em>`, `<strong>`, `<a>`, `<p>`, `<img>` 等）和属性，并剥离所有其他的（黑名单）内容。白名单比黑名单更安全、更可靠。
+- 输出编码 (Output Encoding)
+
+在将富文本内容显示到网页上之前，应根据其所在的 HTML 上下文进行适当的编码。这确保浏览器将用户输入解释为普通文本，而不是可执行的代码。
+
+- 对于富文本，你在存储时已经进行了净化，因此在渲染时，你需要确保你的前端框架（如 React、Vue、Angular）正确地将净化后的 HTML 插入 DOM 中（例如，使用 Vue 的 `v-html` 或 React 的 `dangerouslySetInnerHTML` 时要格外小心，并确保输入源已被净化）。
+- 内容安全策略 (CSP - Content Security Policy)
+
+CSP 是一种额外的安全层，作为最后一道防线，有助于减少 XSS 攻击的严重性。
+
+- 通过设置 HTTP 响应头，你可以限制页面可以加载的脚本、图片和其他资源的来源。例如，可以禁止执行内联脚本 (`'unsafe-inline'`) 或只允许加载来自受信任域名的脚本文件。
+- 其他最佳实践
+
+- **定期更新库:** 确保你使用的富文本编辑器和净化库保持最新状态，以应对新的漏洞。
+- **使用 WAF (Web Application Firewall):** 网页应用防火墙可以监控和过滤恶意 HTTP 流量，提供额外的保护层。
+- **前后端双重验证:** 始终要在接收用户输入时进行基本的输入验证，以确保数据符合预期格式，尽管净化才是处理富文本的核心步骤。
+
+## Open Redirect
+
+网站开发者可以采取以下措施来防止 Open Redirect 漏洞：
+
+- **白名单验证:** 这是最有效的方法。只允许重定向到预先定义的、受信任的 URL 或路径清单。拒绝所有不在白名单上的外部 URL。
+- **禁止外部重定向:** 默认情况下，不允许将用户重定向到外部域名。所有跳转都应限于网站内部路径（例如：`/profile` 而非 `https://example.com/profile`）。
+- **使用中介页面:** 如果必须链接到外部网站，可以使用一个警告页面提醒用户即将离开受信任的网站，让用户确认是否继续。
+- **避免将目标 URL 作为参数:** 尽量避免在 URL 参数中直接传递完整的目标 URL。
 
 
+
+
+
+感谢你提供详细的架构图和技术栈说明。根据你描述的项目背景，我来给你梳理面试准备的重点方向、可能遗漏的知识点，以及你提到的几个具体问题。
+
+---
+
+## 1️⃣ 技术栈回顾及可能遗漏的点
+
+你提到的技术栈：
+
+* **前端**：SAP UI5
+* **后端**：Spring Boot + Spring AI + Redis + RabbitMQ + Eureka + Cloud Foundry
+* **数据库**：SAP HANA
+* **消息/异步**：RabbitMQ (Deprecated)、消息队列服务
+* **日志/监控**：Dynatrace、Turbine、Portal日志
+* **CI/CD**：Docker、Jenkins、GitHub Actions
+* **其他**：AI 驱动的 Script Generator、预定义 SQL、Postman 脚本
+
+可能需要加深了解的地方：
+
+1. **SAP HANA 深入**
+
+   * SYSUUID / GUID 的生成机制（HANA 内置 `SYSUUID`、`NEWID()`、`SEQUENCE`）
+   * 索引优化、分区策略、事务隔离、锁机制
+   * SQL/SQLScript 性能优化（尤其是你提到的 `query v2` 和 `update v2`）
+
+2. **Spring Boot & 微服务相关**
+
+   * Spring AI 集成原理（如何生成 LLM 驱动脚本）
+   * 微服务架构模式：API Gateway、服务注册发现 (Eureka)、负载均衡 (Ribbon)、熔断 (Hystrix)
+   * 分布式事务、幂等性处理、消息队列的可靠性保证
+
+3. **消息队列 & 异步设计**
+
+   * RabbitMQ 基础：队列类型、交换机类型、消息确认机制
+   * 替代方案：如 Kafka、SQS，了解为什么 RabbitMQ 被标记 Deprecated
+   * 异步消息处理设计模式（Event Sourcing、CQRS、消息幂等）
+
+4. **云原生 & 部署相关**
+
+   * Cloud Foundry 路由与 CF Routes 配置
+   * Docker 容器化经验
+   * CI/CD 流程设计和自动化（Jenkins Pipeline、GitHub Actions）
+   * 多云部署：AWS/Azure/GCP/Alibaba/SAP Data Center
+
+5. **前端 & 集成**
+
+   * SAP UI5 与 Spring Boot 后端交互机制（OData、REST API）
+   * JWT token 传递机制、前端路由安全
+
+6. **E2E 核心概念**
+
+   * 测试驱动 / 自动化测试
+   * 幂等性和事务一致性
+   * 数据清理流程（DB Clean Service 的实现原理）
+
+---
+
+## 2️⃣ 你提到的具体问题分析
+
+### (1) GUID 的生成
+
+* HANA 的内置函数 `SYSUUID` 或 `NEWID()` 会生成全局唯一 UUID，企业级项目中大概率使用它而不是自定义生成器。
+* 如果你的 DB Clean Service 需要保证唯一性、可追溯性或分布式安全，`SYSUUID` 是最佳选择。
+
+### (2) 你负责的模块
+
+* DB Clean Service
+
+  * 核心是批量删除和插入 tenant 数据
+  * 需要考虑事务一致性、性能优化（bulk insert/update）
+* Spring AI 驱动的 Script Generator
+
+  * 自动生成 SQL 或 API 调用脚本
+  * 结合 LLM 做智能填充或脚本生成，可能涉及模型微调或 prompt 工程
+* 核心 API 优化 (`query v2`, `update v2`)
+
+  * 需要对 SQL 执行计划、索引、批量处理、缓存策略（Redis）有深入理解
+
+### (3) E2E 接口
+
+* 可能是 **端到端自动化接口**
+* 特点：涉及多微服务调用、消息队列、事务跨服务
+* 考虑面试中突出你在 **接口设计、性能优化、幂等性处理、测试覆盖** 的经验
+
+---
+
+## 3️⃣ 面试准备方向建议
+
+1. **数据库优化 & HANA**
+
+   * 深入理解 HANA 的事务隔离、索引策略
+   * 熟悉 SYSUUID / GUID 的生成
+   * SQL/SQLScript 调优经验
+
+2. **微服务 & Spring Boot**
+
+   * 服务注册与发现 (Eureka)
+   * API Gateway + Ribbon + Hystrix
+   * 微服务间调用的幂等性、事务、错误处理
+
+3. **消息队列**
+
+   * RabbitMQ 原理和替代方案
+   * 异步消息幂等设计
+
+4. **前端交互 & SAP UI5**
+
+   * OData/REST 接口
+   * JWT token 传递和安全机制
+
+5. **CI/CD & 云原生部署**
+
+   * Docker 镜像构建、CF 部署
+   * Jenkins / GitHub Actions 流水线
+   * 多云部署经验
+
+6. **AI 驱动脚本生成**
+
+   * Prompt 工程 / LLM 应用场景
+   * API 自动化生成和优化
+
+7. **E2E & 测试**
+
+   * 端到端接口设计与测试策略
+   * 自动化测试/接口测试工具
+
+---
