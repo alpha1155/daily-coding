@@ -1451,6 +1451,24 @@ Spring 默认策略：有接口用 JDK，无接口或强制 proxy-target-class=t
 
 99% 的场景用 Spring 自动选择就行，只有极致性能才自己选
 
+JDK 动态代理和 CGLIB 是 Spring AOP 默认使用的两种代理方式，主要区别有以下 5 点：
+
+1. 实现原理不同
+   - JDK 动态代理基于接口，底层通过 java.lang.reflect.Proxy 类，利用反射生成一个实现目标接口的代理类。
+   - CGLIB 基于继承，底层是 ASM 字节码框架，直接生成目标类的子类。
+2. 使用条件不同
+   - JDK 代理要求目标类必须实现接口。
+   - CGLIB 不要求实现接口，只要类不是 final、方法不是 final/private 就能代理。
+3. 性能区别
+   - JDK 代理创建对象更快（因为用反射），但调用方法稍慢。
+   - CGLIB 创建对象稍慢（因为要生成字节码），但调用方法更快（用了 FastClass 索引机制）。 Spring 5.3+ 默认已经用 JDK 代理性能更好。
+4. Spring 的默认选择策略
+   - Spring 5.0 以前：有接口用 JDK，没有接口用 CGLIB。
+   - Spring 5.0 之后（包括 Spring Boot 2+）：优先使用 JDK 动态代理，只有当类没有实现任何接口时才用 CGLIB。 （源码：DefaultAopProxyFactory 判断逻辑）
+5. 不能被代理的情况
+   - final 类、final 方法、private 方法都不能被 CGLIB 代理
+   - 没接口且类是 final 的，AOP 就彻底失效
+
 | 对比维度                | JDK 动态代理（java.lang.reflect.Proxy）  | CGLIB（Code Generation Library）                        |
 | ----------------------- | ---------------------------------------- | ------------------------------------------------------- |
 | **底层实现原理**        | 运行时动态生成实现接口的代理类（字节码） | 运行时动态生成目标类的**子类**（继承）                  |
@@ -2616,6 +2634,13 @@ graph TD
 | `NEVER`         | 坚决不要事务           | 否           | 抛异常     | 无事务执行 | 性能敏感       |
 | `NESTED`        | 保存点，部分回滚       | 是（保存点） | 嵌套保存点 | 新建       | 部分回滚       |
 
+### 在一个包含多个服务调用的业务流程中，如果其中一个服务方法执行失败需要回滚，但不能影响其他服务的正常执行，你认为应该如何设置事务的传播行为？
+
+1. PROPAGATION_NESTED（嵌套事务 + Savepoint）
+   1. 应该使用 PROPAGATION_NESTED 嵌套事务。它会在当前事务中创建保存点，如果该方法失败，只回滚到保存点之前的状态，不会影响已经执行成功的其他服务方法，同时主事务仍然可以决定最终是提交还是回滚，完美实现了‘部分回滚、不影响其他服务’的需求。
+
+2. PROPAGATION_REQUIRES_NEW（挂起主事务，开启新事务）
+
 ## 3.spring是如何解决循环依赖的?
 
 ![幸云教育：三级缓存和循环依赖](https://cdn.tobebetterjavaer.com/stutymore/spring-20250706065436.png)
@@ -2623,7 +2648,7 @@ graph TD
 > **三级缓存是为了支持 AOP 代理**：
 >
 > - **一级**：完整 Bean（最终态）
-> - **二级**：早期裸对象（未完成初始化）
+> - **二级**：放已经生成过早期引用（已处理过 AOP 代理）的半成品 Bean（未完成初始化）
 > - **三级**：ObjectFactory（延迟生成代理） **二级够解决普通循环依赖，但不能支持 AOP 动态代理**。
 
 ------
@@ -2658,6 +2683,12 @@ graph TD
 > 构造器注入：不支持循环依赖（构造时必须完成依赖） 
 >
 > 推荐构造器注入（Spring 官方 + 不可变 + 测试友好），循环依赖用 @Lazy 解决。
+
+单例的单例对象setter(注入单例 + 带 @Transactional 等注解的循环依赖)
+
+构造器注入 + @Lazy
+
+多实例+@Scope("prototype")+ObjectProvider (能用，但每次 getBean 都会重新创建一整条依赖链，性能极差，几乎没人这么干)
 
 
 
@@ -2702,7 +2733,7 @@ Spring特性：
 | -------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | 核心目的 | 把对象的创建和依赖关系交给 Spring 容器管理                   | 把日志、事务、安全、缓存等横切关注点从业务代码中剥离         |
 | 核心容器 | BeanFactory（基础） → ApplicationContext（增强）             | -                                                            |
-| 三大特性 | 1. 依赖注入（DI）<br>2. 生命周期管理（init/destroy）<br>3. Bean 作用域（singleton、prototype） | 1. 切点（Pointcut）<br>2. 通知（Advice：前置、后置、环绕、异常、最终）<br>3. 织入（Weave） |
+| 三大特性 | **1. 依赖注入（DI）<br>2. 生命周期管理（init/destroy）<br>**3. Bean 作用域（singleton、prototype） | 1. 切点（Pointcut）<br>2. 通知（Advice：前置、后置、环绕、异常、最终）<br>3. 织入（Weave） |
 | 典型注解 | @Component/@Service/@Repository/@Controller<br>@Autowired/@Qualifier/@Primary/@Value | @Aspect<br>@Before/@After/@AfterReturning/@AfterThrowing/@Around |
 | 生产价值 | 解耦 + 可测试 + 配置化                                       | 零侵入实现事务、日志、权限、缓存、限流等公共功能             |
 
@@ -2746,7 +2777,6 @@ Spring特性：
 5. 所以我们以后 @Autowired 注入进来的，其实是代理对象。  
    当调用 userService.save() 时，实际上先走代理 → 触发切面（事务、缓存、日志）→ 再调用真实对象的方法。
 
-
 IoC 是通过 BeanDefinition + 反射 + 生命周期回调实现的，  
 AOP 的本质是 AnnotationAwareAspectJAutoProxyCreator 这个 BeanPostProcessor 在 Bean 初始化完成的最后一步，偷偷把原对象换成了动态代理对象。”
 
@@ -2756,8 +2786,7 @@ AOP 的本质是 AnnotationAwareAspectJAutoProxyCreator 这个 BeanPostProcessor
 问：事务到底是怎么生效的？  
 答：@Transactional 最终会生成一个 TransactionInterceptor，放在代理的拦截链里，调用方法时先走这个拦截器开启/提交/回滚事务。
 
-“所以 Spring 最牛的地方不是实现了 IoC 和 AOP，  
-而是把这两个最复杂、最容易写错的东西，用注解 + 动态代理的方式，让我们一行代码都不用写就拥有了声明式事务、缓存、权限这些企业级能力。”
+
 
 ### 2>IOC和AOP是通过什么机制来实现的？
 
@@ -3034,9 +3063,14 @@ Spring Boot 通过 Spring 框架的事务管理模块来支持事务操作。事
 
 **最经典、最常被问到的失效场景（必背前 3 条）**：
 
-- **this 调用**（最最最最最常见！）—— 事务方法内部通过 this.xxx() 调用另一个加了 @Transactional 的方法，事务失效（因为没走代理）
-- **非 public 方法** —— @Transactional 只能加在 public 方法上
+- **this 调用**—— 事务方法内部通过 this.xxx() 调用另一个加了 @Transactional 的方法，事务失效（因为没走代理）因为 this.save() 调的是原对象的方法，绕过了代理。必须 aopContext 暴露代理或者注入自己。
+- **非 public 方法** —— @Transactional 只能加在 public 方法上（代理根本看不到这个方法）
 - **只捕获了异常没抛出** —— try-catch 吃了异常，Spring 感知不到需要回滚
+- 方法是 **final**——子类无法重写这个方法
+
+那 protected 方法能不能被 @Transactional？
+
+答：同一个包下可以，不同包不行。因为 CGLIB 生成的子类和目标类默认在同一个包，跨包就看不到 protected 方法了。
 
 ## 15、Spring 的事务？
 
@@ -3057,6 +3091,16 @@ Spring Boot 通过 Spring 框架的事务管理模块来支持事务操作。事
 一句话总结：  
 Spring 事件 = 内置轻量级 Guava EventBus，解耦 + 异步 + 可扩展，几乎 0 侵入，生产中常用于：  
 订单支付成功 → 发优惠券、加积分、发站内信、写审计日志、刷新缓存…
+
+| 步骤 | 发生了什么（大白话）                                         | 关键类 / 机制                                        |
+| ---- | ------------------------------------------------------------ | ---------------------------------------------------- |
+| 1    | 看到 @Transactional → 生成一个代理对象                       | Proxy（JDK 或 CGLIB）                                |
+| 2    | 调用有 @Transactional 的方法 → 进入代理逻辑                  | TransactionInterceptor                               |
+| 3    | 开启事务：从 DataSource 拿一个 Connection                    | DataSourceUtils.getConnection()                      |
+| 4    | 把 Connection 设置为手动提交（setAutoCommit=false）并绑定到当前线程的 ThreadLocal | ConnectionHolder + TransactionSynchronizationManager |
+| 5    | 执行你的业务方法（所有 JdbcTemplate、MyBatis 都会从 ThreadLocal 拿到同一个 Connection） | 同同一个物理连接                                     |
+| 6    | 方法正常结束 → 提交事务（connection.commit()）               | PlatformTransactionManager.commit()                  |
+| 7    | 出现异常 → 回滚事务（connection.rollback()）+ 清除 ThreadLocal | PlatformTransactionManager.rollback()                |
 
 ### 2025 年大厂最常用 4 种写法（直接抄，99% 场景够用）
 
@@ -3539,6 +3583,55 @@ class MyManualDataSourceConfig {
 
 - **变种1：如何禁用所有的自动配置？**
   - **回答**：将 `@EnableAutoConfiguration` 的功能关闭即可。即：将 `@SpringBootApplication` 替换为它包含的另外两个注解：`@Configuration` 和 `@ComponentScan`。
+
+## 24、IOC容器启动流程
+
+| 步骤 | 口诀 | 真实发生的事（面试官最想听的）                               | 关键类 / 注解                  |
+| ---- | ---- | ------------------------------------------------------------ | ------------------------------ |
+| 1    | 扫   | 扫描 classpath 下的类，找带 @Component、@Service 等注解的类  | ClassPathBeanDefinitionScanner |
+| 2    | 定   | 把扫描到的类封装成 BeanDefinition（相当于“Bean 的设计图纸”） | BeanDefinition                 |
+| 3    | 注   | 把所有 BeanDefinition 注册到 BeanFactory（一个大 Map）里     | DefaultListableBeanFactory     |
+| 4    | 调   | 遇到 BeanPostProcessor、BeanFactoryPostProcessor 先特殊处理（比如 @Configuration、@Bean、PropertySourcesPlaceholderConfigurer） | 各种 xxxPostProcessor          |
+| 5    | 创   | 开始真正创建单例 Bean：先反射调用构造方法 new 出对象         | instantiateBean                |
+| 6    | 填   | 属性填充（解决 @Autowired、@Value 注入）→ 这步会触发循环依赖的三级缓存机制 | populateBean                   |
+| 7    | 前   | 执行 Aware 接口回调（setBeanName、setBeanFactory、setApplicationContext） | invokeAwareMethods             |
+| 8    | 初   | 执行所有 BeanPostProcessor 的 postProcessBeforeInitialization（典型：@PostConstruct） | @PostConstruct                 |
+| 9    | 初   | 执行初始化方法：init-method、InitializingBean.afterPropertiesSet | afterPropertiesSet             |
+| 10   | 后   | 执行所有 BeanPostProcessor 的 postProcessAfterInitialization（典型：AOP 代理在这里生成！） | AOP 代理、@Async 等            |
+| 11   | 放   | 把完全初始化好的 Bean 放进一级缓存（singletonObjects）       | addSingleton                   |
+| 12   | 成   | 整个容器刷新完成，发布 ContextRefreshedEvent 事件            | publishEvent                   |
+
+“Spring IOC 容器启动主要分三大部分：
+
+1. **扫描**：扫描 classpath，找到加了 @Component 及其衍生注解的类，生成 BeanDefinition。
+
+2. **注册**：把所有 BeanDefinition 放进 BeanFactory。
+
+3. 实例化+初始化
+
+   - 对单例 Bean 提前实例化
+   - 反射创建对象 → 属性注入（@Autowired）→ Aware 回调 → @PostConstruct → 初始化方法 → AOP 代理 → 放进一级缓存
+   - 整个过程通过三级缓存完美解决 Setter 注入的循环依赖。
+
+   **实例化 = 反射 new 一个空壳对象** **初始化 = 把空壳变成能用的完整 Spring Bean**
+
+最后调用 publishEvent 发布容器刷新完成事件，启动结束。”
+
+问：BeanFactory 和 ApplicationContext 区别？ 
+
+答：BeanFactory 是最底层接口，只管创建 Bean；ApplicationContext 是高级容器，额外提供了事件发布、国际化、资源加载、刷新等功能。
+
+问：refresh() 方法干了啥？ 
+
+答：**Spring 启动的核心**就是调用 refresh()，上面12步几乎都在这个方法里完成。
+
+问：Bean 是懒加载还是饿加载？ 
+
+答：**默认单例 Bean 是饿加载（容器启动就创建）；加了 @Lazy 才会懒加载。**
+
+问：AOP 代理在哪一步生成的？ 
+
+答：在 BeanPostProcessor 的 postProcessAfterInitialization 阶段（第10步），典型实现是 AnnotationAwareAspectJAutoProxyCreator。
 
 
 
@@ -5960,9 +6053,7 @@ public class SeckillService {
 
 # EMS
 
-企业级 SaaS 权益管理中台-基于 SAP BTP 全云原生多租户架构
-
-为世界 500 强制造、能源、零售客户交付一套完全自研的企业级 SaaS 权益管理与智能决策平台（非直接使用标准产品，而是基于 SAP BTP 扩展能力深度定制），实现许可证、订阅、服务、保修等权益的建模、生命周期自动化管理、下游履约编排以及实时分析决策。属于典型的多租户、大流量、低延迟企业级分布式系统，核心服务统一部署于 SAP BTP Cloud Foundry 多地区环境，采用 Spring Boot 3 + Spring Cloud微服务架构，配合 Redis 分布式缓存 + RabbitMQ实现异步解耦、事件驱动与最终一致性，结合 SAP HANA Cloud 多租户支撑秒级高并发复杂分析查询，通过 Resilience4j 全套（熔断、重试、限流、舱壁）+ Redis 分布式令牌桶保障系统高可用，通过postman和WDI5构建起覆盖API和UI的E2E测试方案， Feature Toggle 机制实现了灰度发布**、**A/B 测试和生产环境的动态风险管控，基于 GitHub Actions + Jenkins + Docker + CF CLI 构建全链路 CI/CD 与 Dev/Stage/Prod 多环境自动化部署体系，配合 XSUAA + SaaS Provisioning + Destination/Connectivity Service 实现多租户自动化开通与客户 S/4HANA 安全直连。
+**JdbcTemplate 或 Spring Data JPA**
 
 具体职责：
 
@@ -5973,30 +6064,15 @@ public class SeckillService {
 - 封装 axios 实例级拦截器，自动处理 XSUAA JWT 刷新 + csrf-token 动态获取 + 多租户 subdomain 切换 + 请求重试，结合 csv-parse / xlsx / papa-parse 实现 Excel/CSV 批量驱动测试；
 - 构建GitHub Actions + Jenkins Pipeline 双 CI 引擎自动化流水线，GitHub Actions 实现 PR 检查，Jenkins 每日两次全量回归；集成 Allure到平台中，生成报告，并且自动推送到团队邮箱。
 
-设计并落地DB Cleaner微服务
-
-- 提供 HTTP API，一键清空与重建环境；
-- 动态解析 HANA **SYS.REFERENTIAL_CONSTRAINTS** 外键依赖，计算拓扑排序并自动依序执行 TRUNCATE / 分区级删除，清理效率提升 **80%+**；
-- 基于事务包裹 Clean + Init SQL Script，失败自动回滚，保证 “要么全部成功，要么不改动”，Redis 分布式锁防止并发冲突；
-- 服务已集成至测试平台、回归环境及 CI/CD，支撑 E2E 自动化与多环境一致性。
-
-```json
-{
-    "tenantId": "alpha-test",
-    "connectionUrl": "jdbc:sap://xxx.hana.cloud:443",
-    "schema": "ALPHA",
-    "credentialsId": "cleaner-automation"
-}
-```
-
-
-
-
-
 
 
 - 开发测试环境 DB Cleaner 微服务，提供 HTTP API，一键清空与重建环境，动态解析 HANA **SYS.REFERENTIAL_CONSTRAINTS** 外键依赖，计算拓扑排序并自动依序执行 TRUNCATE / 分区级删除，清理效率提升 **80%+**；同时基于事务包裹 Clean + Init SQL Script，失败自动回滚，保证 “要么全部成功，要么不改动”，Redis 分布式锁防止并发冲突；
-- 
+- 设计并实现客户可编程的**权益批量自动化引擎（Entitlement Process API）**，外部客户仅需一次 HTTP 调用+JSON 规则即可驱动查询+批量更新权益；采用**同步/异步双模式统一入口**：1. 同步模式通过 OpenFeign 直连内部高性能微服务实时返回结果；2. 异步模式结合**本地事务+Outbox 表**可靠投递至 RabbitMQ，快速返回 202，后端独立process服务消费执行,**基于内存的临时状态判断**机制确保**单次数据库提交内的规则逻辑一致性与高效处理**，核心写阶段使用 **HANA 单语句原子 MERGE + 行级排他锁 + 内置乐观锁**实现全量原子提交，单 Process 1000 条耗时 <150ms。
+- 基于Spring AI 的LLM-Driven Script Generator），设计并实现“自然语言需求 → 可执行JS脚本”一键生成功能，结合 Prompt Engineering 调用内部Gemini模型；生成脚本统一封装为function executeStep(page, data, utils) 标准格式，与现有框架无缝集成内置代码格式化、失败自动重试机制，生成成功率稳定 93%+。
+- 核心查询接口 `QueryV2` 的重构调优工作，在解决随数据量增长带来的性能瓶颈，确保系统支持百万级权益的秒级并发查询。
+  - **性能瓶颈分析与解决：** 利用 **OpenTelemetry** 与 **Dynatrace** 进行全链路追踪，精确定位慢查询根源于应用层复杂数据聚合。
+  - **架构优化与代码下推：** 采用 **SAP HANA Cloud (列存)** 架构，将复杂查询逻辑从 **Spring Boot** 应用服务下推至数据库层，通过构建优化的 **Calculation Views** 和 **CDS Views**，利用 HANA 内存计算能力实现并行计算，避免昂贵的数据传输。
+  - **多层级缓存与弹性：** 引入 **Redis 分布式缓存**缓解数据库压力，并使用 **Resilience4j**（限流、熔断）策略保障接口稳定性。
 
 （Eureka 服务注册与发现、Cloud LoadBalancer + OpenFeign 声明式调用），
 
@@ -6407,11 +6483,10 @@ CSP 是一种额外的安全层，作为最后一道防线，有助于减少 XSS
 可能需要加深了解的地方：
 
 1. **SAP HANA 深入**
-
    * SYSUUID / GUID 的生成机制（HANA 内置 `SYSUUID`、`NEWID()`、`SEQUENCE`）
    * 索引优化、分区策略、事务隔离、锁机制
    * SQL/SQLScript 性能优化（尤其是你提到的 `query v2` 和 `update v2`）
-
+   
 2. **Spring Boot & 微服务相关**
 
    * Spring AI 集成原理（如何生成 LLM 驱动脚本）
@@ -6476,11 +6551,10 @@ CSP 是一种额外的安全层，作为最后一道防线，有助于减少 XSS
 ## 3️⃣ 面试准备方向建议
 
 1. **数据库优化 & HANA**
-
    * 深入理解 HANA 的事务隔离、索引策略
    * 熟悉 SYSUUID / GUID 的生成
    * SQL/SQLScript 调优经验
-
+   
 2. **微服务 & Spring Boot**
 
    * 服务注册与发现 (Eureka)
@@ -6498,11 +6572,10 @@ CSP 是一种额外的安全层，作为最后一道防线，有助于减少 XSS
    * JWT token 传递和安全机制
 
 5. **CI/CD & 云原生部署**
-
    * Docker 镜像构建、CF 部署
    * Jenkins / GitHub Actions 流水线
    * 多云部署经验
-
+   
 6. **AI 驱动脚本生成**
    * Prompt 工程 / LLM 应用场景
    * API 自动化生成和优化
@@ -6587,4 +6660,144 @@ SAP Innovation Management (SAP IM) 平台开发与实施
 15. 设计租户级 Blue-Green 零停机发布流程，配合 CF Route + manifest.yml 实现分钟级切换
 16. 负责日常生产问题排查、性能瓶颈定位、应急响应（多次主导月末高峰期系统稳定）
 
-### 真实拿高薪的同学通常会这么组合（6~7 条就够）
+
+
+```
+spring:
+  ai:
+    vertex:
+      ai:
+        gemini:
+          project-id: your-gcp-project-id
+          location: us-central1
+          chat:
+            options:
+              model: gemini-2.0-flash-exp-03-25    # 2025 年企业最常用实验版 Flash
+              temperature: 0.2
+              top-p: 0.95
+              max-output-tokens: 2048
+              response-mime-type: application/json   # 强制 JSON 结构化输出
+```
+
+
+
+
+
+
+
+    @Service
+    @RequiredArgsConstructor
+    public class Wdi5ScriptGeneratorService {
+    private final ChatClient chatClient;  // Spring AI 自动注入，已绑定 Gemini
+    
+    private static final String SYSTEM_PROMPT = """
+        你是一个资深的 SAP UI5 WDI5 自动化脚本专家。
+        你必须严格按照以下格式输出可执行的 JavaScript 函数，不能多一句话，不能有 markdown 代码块。
+        必须使用标准的 executeStep(page, data, utils) 格式。
+        使用 utils.waitForUI5() 做全局等待，使用 utils.log() 打日志。
+        所有控件定位必须使用 WDI5 推荐的 controlType + properties 方式。
+        失败必须 throw new Error()。
+        输出必须是纯函数代码，可直接被 Function.parse() 执行。
+        """;
+    
+    public String generateScript(String naturalLanguage) {
+        String userPrompt = """
+            请生成 WDI5 脚本完成以下操作：
+            %s
+            
+            要求：
+            - 支持多租户子域名自动识别
+            - 所有输入框使用 SmartField 或 Input + binding
+            - 表格操作必须使用 getRows() + getCells()
+            - 最后必须有关闭 Dialog 或返回上一页的步骤
+            """.formatted(naturalLanguage);
+    
+        Prompt prompt = new Prompt(
+            List.of(
+                new SystemMessage(SYSTEM_PROMPT),
+                new UserMessage(userPrompt)
+            ),
+            GeminiChatOptions.builder()
+                .withTemperature(0.2)
+                .build()
+        );
+    
+        return chatClient.call(prompt)
+                .getResult()
+                .getOutput()
+                .getContent()
+                .trim();
+    }
+    }
+    {
+      "contents": [
+        {
+          "role": "model",
+          "parts": [{ "text": "你是一个资深的 SAP UI5 WDI5 自动化脚本专家...\n" }]
+        },
+        {
+          "role": "user",
+          "parts": [{ "text": "请生成 WDI5 脚本完成以下操作：\n在租户管理页面创建一个新租户，填入名称 'Test-Tenant-2025'，选择 Standard 版本，点击 Save 并验证成功弹窗出现。" }]
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.2,
+        "maxOutputTokens": 2048,
+        "responseMimeType": "application/json"
+      }
+    }
+HANA Calculation View + 动态字段投影 + Redis 二级缓存 + （例如产品配置信息、客户主数据、短期内频繁查询的活跃权益状态），引入 Redis 作为二级缓存。
+
+- 
+
+```json
+{
+    "tenantId": "alpha-test",
+    "connectionUrl": "jdbc:sap://xxx.hana.cloud:443",
+    "schema": "ALPHA",
+    "credentialsId": "cleaner-automation"
+}
+```
+
+
+
+1. **一级缓存（应用内缓存）：** 使用 Spring Boot 应用内存中的本地缓存（例如 Guava 或 Caffeine）来存储最近访问的流程配置。这是最快的访问方式。
+2. **二级缓存（Redis 分布式缓存）：** 使用 Redis 作为共享缓存。当不同的微服务实例需要访问配置时，它们可以从 Redis 中快速获取。
+3. **主动失效机制：** 当客户更新流程配置时，您的配置管理服务应主动通知相关的微服务或向 Redis 发送失效命令，以确保下一个请求能加载到最新规则。
+
+以下是一个适合「Java后端开发3年经验」岗位投递的**专业技能列表**（技术栈主流、全面、含深度，适合投大厂或中大厂），你可以直接抄或者根据实际情况微调：
+
+**专业技能**
+
+- 熟练使用 Java 核心技术，精通 Java 8+ 特性（Stream、Lambda、Optional、CompletableFuture、LocalDateTime 等）
+- 深入理解并长期使用 Spring 全家桶：
+  - Spring Boot（2.x/3.x）、Spring MVC、Spring Data JPA、Spring Security、Spring Cloud
+  - Spring Cloud Alibaba（Nacos、Sentinel、Seata、RocketMQ）
+- 熟练使用微服务架构，具备完整微服务项目从0到1开发经验
+- 熟练使用常见中间件：
+  - Redis（主从、哨兵、Cluster、分布式锁、Pipeline、Lua 脚本、缓存穿透/雪崩解决方案）
+  - MySQL（索引优化、分库分表、慢查询分析、事务隔离级别、MVCC）
+  - RabbitMQ / RocketMQ / Kafka（高性能消息队列、延迟队列、幂等消费、顺序消息、死信队列）
+  - Elasticsearch（倒排索引、DSL 查询、聚合分析、亿级数据检索优化）
+- 熟练使用 MyBatis / MyBatis-Plus，熟悉动态 SQL、插件机制、多数据源切换
+- 熟悉 JVM 调优（内存结构、GC 算法、常见 GC 调优参数、 Arthas、异步日志）
+- 熟悉常见设计模式及重构，具备大型系统设计与优化经验
+- 熟练使用 Docker + Kubernetes 完成容器化部署与服务编排
+- 熟练使用 Git、Maven/Gradle、Jenkins/GitLab CI 进行版本控制与持续集成
+- 熟悉 Linux 常见命令，具备问题排查与性能调优经验（top、free、vmstat、sar、strace、tcpdump）
+- 熟悉分布式系统常见问题与解决方案：
+  - 分布式锁、分布式事务（Seata AT/TCC/XA、RocketMQ 事务消息）
+  - 限流熔断降级（Sentinel、Resilience4j）
+  - 接口幂等、最终一致性、CAP 理论
+- 熟悉高并发场景优化（线程池调优、连接池调优、异步化、批量操作、热点缓存）
+- 了解常见 NoSQL（MongoDB、ClickHouse、TiDB）与 NewSQL 应用场景
+- 了解前后端分离开发，熟悉 RESTful API 设计规范与 OpenAPI/Swagger 文档生成
+- 具备良好的代码规范与代码审查能力，熟悉 SonarQube、阿里巴巴 Java 开发手册
+
+**加分项（有最好写上，没有也别硬写）**
+- 熟悉 Go/Python 等后端语言，有混合技术栈项目经验
+- 参与过亿级 PV/日活百万+项目的架构设计与优化
+- 有开源项目贡献或个人技术博客
+- 熟悉大数据生态（Flink、Spark、Hadoop）
+- 熟悉云原生技术（Istio Service Mesh、Serverless、GraalVM）
+
