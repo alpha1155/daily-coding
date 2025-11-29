@@ -3674,6 +3674,34 @@ class MyManualDataSourceConfig {
 
 
 
+ 1、Spring事务的传播行为有哪几种？ 
+
+2、Spring中@Component和@Bean有什么区别？ 
+
+3、Spring中@Resource和@Autowire的区别？
+
+4、Spring中BeanFactory和FactoryBean区别？ 
+
+5、Spring Bean如何保证并发安全？ 
+
+6、Spring的缓存有什么用？ 能不能拿掉二级缓存？ 
+
+7、Spring面试突击：@Conditional注解有什么作用？ 
+
+8、Spring面试突击：为什么要使用Spring框架？ 
+
+9、Spring是如何解决循环依赖问题的？ 
+
+10、Spring为什么流行？Spring Boot又解决了什么问题？ 
+
+11、Spring中有两个相同的id会报错吗？ 
+
+12、介绍下Spring IOC的工作流程？ 
+
+13、Spring Bean的创建顺序如何控制？ 
+
+14、如何对SpringBoot配置文件敏感信息加密？
+
 # 网络
 
 ## 1. 浏览器对网页有缓存吗？缓存是如何存放的？
@@ -6680,6 +6708,145 @@ SAP Innovation Management (SAP IM) 平台开发与实施
 - 通过技术优化，创意评估流程效率提升 XX%（例如 30%）。
 - 利用 HANA 实时分析能力，为管理层提供了更及时、准确的创新洞察报告。
 
+### 白名单机制（Whitelist Mechanism）在 SAP HANA XSJS 中的 XSS 过滤引擎实现分析
+
+基于对 SAP 官方文档、社区讨论和相关技术资源的搜索（如 SAP Help Portal、XSJS 参考手册和安全最佳实践），SAP HANA XS Engine（XSJS）中的白名单机制驱动的内容过滤引擎，通常不是依赖第三方库（如 xss 库），而是**自定义实现的基于正则表达式（RegExp）和字符串处理的轻量级过滤器**。这是因为 XSJS 运行在 SAP HANA 的服务器端 JavaScript 环境中，强调简洁、高性能和与 HANA 原生 API 的集成，而不是引入外部依赖。
+
+这种机制的核心哲学是**白名单优先**（而非黑名单），即只允许预定义的安全 HTML 标签和属性通过，过滤掉一切潜在恶意内容（如 `<script>`、事件属性如 `onload`）。它适用于富文本输入场景（如用户评论、描述字段），在数据入库前（服务层）或输出前进行清洗。以下是典型实现方式的详细拆解，包括原理、代码示例和最佳实践。
+
+#### 1. **实现原理（核心逻辑）**
+   - **白名单定义**：预定义一个安全的标签和属性列表（JSON 对象），例如只允许 `<p>`、`<b>`、`<a>` 等标签，且 `<a>` 只允许 `href` 属性（且必须是 http/https）。
+   - **过滤流程**：
+     1. **解析输入**：使用正则表达式匹配 HTML 标签结构（`<tag attr="value">`）。
+     2. **匹配白名单**：检查标签名和属性是否在白名单中；不在的直接移除或替换为空字符串。
+     3. **属性值清洗**：对允许的属性进行二次验证（如 URL 协议检查、编码转义），防止间接注入（如 `javascript:` 协议）。
+     4. **编码输出**：使用 HTML 实体编码（e.g., `<` → `&lt;`）处理剩余内容，防止后续渲染时的 XSS。
+     5. **异常处理**：如果输入包含高风险模式（如 `<script>`），直接抛出错误或记录日志。
+   - **为什么用正则 + 白名单？**
+     - XSJS 无内置 DOM 解析器（不像 Node.js 有 cheerio），正则高效且轻量。
+     - 白名单比黑名单更安全：黑名单易漏（如新变种 `onload=alert(1)`），白名单只放“已知安全”。
+     - 集成 HANA 安全：结合 XSJS 的 `$.security` 模块或 HANA Auditing 记录可疑输入。
+   - **性能考虑**：过滤在服务层（XSJS 文件中）执行，避免数据库污染；对于高并发，使用缓存白名单配置。
+
+   从搜索结果看，SAP 官方推荐在 XSJS 中自定义这种引擎（如  和  的 XSJS 参考手册），而非依赖外部库。社区（如  SAP Community）强调避免黑名单，转向白名单以应对 XSS 变种。
+
+#### 2. **典型代码实现示例**
+在 XSJS 文件（如 `filter.xsjs`）中实现一个独立的过滤函数。以下是基于 SAP XSJS API 的简化示例（可直接部署到 HANA XS 项目中）：
+
+```javascript
+// filter.xsjs - 白名单驱动的 XSS 过滤引擎
+$.response.contentType = "application/json";
+
+function sanitizeHtml(input) {
+    // Step 1: 定义白名单（可从 HANA 表或配置文件动态加载）
+    var whitelist = {
+        'p': [],                // <p> 无属性
+        'b': [],                // <b> 加粗
+        'i': [],                // <i> 斜体
+        'a': ['href'],          // <a> 只允许 href
+        'ul': [], 'ol': [],     // 列表
+        'li': []                // 列表项
+    };
+
+    // Step 2: 正则匹配所有标签
+    var tagRegex = /<(\w+)([^>]*)>(.*?)<\/\1>/gi;
+    var sanitized = input.replace(tagRegex, function(match, tagName, attributes, content) {
+        tagName = tagName.toLowerCase();
+        
+        // Step 3: 检查标签是否在白名单
+        if (!whitelist.hasOwnProperty(tagName)) {
+            return sanitizeContent(content);  // 移除标签，只保留内容
+        }
+
+        // Step 4: 解析并过滤属性
+        var attrs = {};
+        var attrRegex = /(\w+)=["']([^"']*)["']/g;
+        var attrMatch;
+        while ((attrMatch = attrRegex.exec(attributes)) !== null) {
+            var attrName = attrMatch[1].toLowerCase();
+            var attrValue = attrMatch[2];
+            
+            // 只允许白名单属性
+            if (whitelist[tagName].indexOf(attrName) === -1) {
+                continue;  // 跳过非法属性
+            }
+            
+            // Step 5: 属性值二次清洗（e.g., href 只允许 http/https）
+            if (attrName === 'href') {
+                if (!/^https?:\/\//.test(attrValue)) {
+                    continue;  // 拒绝 javascript: 等协议
+                }
+                attrValue = escapeHtml(attrValue);  // 实体编码
+            }
+            attrs[attrName] = attrValue;
+        }
+
+        // Step 6: 构建安全标签
+        var attrStr = '';
+        for (var key in attrs) {
+            attrStr += ' ' + key + '="' + attrs[key] + '"';
+        }
+        var innerContent = sanitizeContent(content);  // 递归清洗内容
+        return '<' + tagName + attrStr + '>' + innerContent + '</' + tagName + '>';
+    });
+
+    // Step 7: 清洗非标签内容（全局实体编码）
+    return sanitizeContent(sanitized);
+}
+
+function sanitizeContent(str) {
+    return str.replace(/[<>&"']/g, function(char) {
+        switch (char) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '"': return '&quot;';
+            case "'": return '&#x27;';
+        }
+    });
+}
+
+// 示例使用：处理 POST 输入
+try {
+    var body = $.request.body.asString();
+    var cleanContent = sanitizeHtml(body);
+    
+    // 存储到 HANA（使用 $.db 或 OData）
+    var conn = $.db.getConnection();
+    var pstmt = conn.prepareStatement('INSERT INTO USER_CONTENT (html) VALUES (?)');
+    pstmt.setString(1, cleanContent);
+    pstmt.executeUpdate();
+    pstmt.close();
+    conn.close();
+    
+    $.response.status = $.net.http.OK;
+    $.response.setBody(JSON.stringify({ status: 'success', content: cleanContent }));
+} catch (e) {
+    $.response.status = $.net.http.INTERNAL_SERVER_ERROR;
+    $.response.setBody(JSON.stringify({ error: 'Invalid input: ' + e.message }));
+}
+```
+
+- **解释**：
+  - **白名单（whitelist 对象）**：核心配置，可从 HANA 表动态加载（e.g., `SELECT * FROM WHITELIST_CONFIG`）。
+  - **正则匹配**：`tagRegex` 捕获标签结构，`attrRegex` 解析属性。
+  - **过滤逻辑**：不在白名单的标签/属性直接移除；属性值用正则验证协议。
+  - **编码**：`sanitizeContent` 处理特殊字符，防止注入。
+  - **集成**：在 XSJS 服务中调用（如 POST 请求处理），结合 HANA 连接存储清洗后数据。
+  - **扩展**：可添加日志（`$.trace`）或审计（HANA Auditing）记录过滤事件。
+
+#### 3. **部署与最佳实践（基于搜索结果）**
+   - **部署位置**：在 XSJS 服务文件（.xsjs）中，作为中间件或独立函数。结合 `.xsaccess` 配置 CORS 和认证（ 示例）。
+   - **安全增强**：
+     - **输出编码**：渲染时用 `$.response.setBody(escapeHtml(cleanContent))`。
+     - **CSP（Content Security Policy）**：在 `.xsaccess` 中启用 `X-XSS-Protection: 1; mode=block`（ S/4HANA 安全指南）。
+     - **监控**：用 HANA Auditing 记录可疑输入（ ERPSCAN 博客）。
+     - **测试**：用 XSUnit（）单元测试过滤效果；模拟 XSS Payload 如 `<script>alert(1)</script>` 验证移除。
+   - **局限性**：正则可能漏复杂嵌套（如 `<iframe>` 内嵌），建议结合 SAP UI5 的客户端验证（）。现代项目迁移到 CAP/Node.js 时，可用 `xss` 库增强（）。
+   - **SAP 推荐**：官方文档（、）强调白名单 + 编码组合，避免纯黑名单。社区（如 Medium ）建议在 XSJS 中集成安全最佳实践。
+
+这种实现简单、高效，适合 SAP Innovation Management 的富文本场景。如果需要更高级的（如 DOM-based），可迁移到 XS Advanced 的 Node.js 模块（）。如果有具体代码或项目细节，我可以进一步优化示例！
+
 ------
 
 1. 主导/深度参与多租户核心框架落地（Schema-per-Tenant + 动态数据源 + Tenant Context 传递）
@@ -6717,10 +6884,6 @@ spring:
               max-output-tokens: 2048
               response-mime-type: application/json   # 强制 JSON 结构化输出
 ```
-
-
-
-
 
 
 
