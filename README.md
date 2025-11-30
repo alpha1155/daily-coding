@@ -5189,7 +5189,15 @@ EXPLAIN SELECT * FROM orders WHERE user_id = 100 AND order_date > '2024-01-01';
 
 ## 21、分库分表
 
+## 22、日志
 
+| 排名 | 日志类型          | 常见用途                                 |
+| ---- | ----------------- | ---------------------------------------- |
+| 1    | Error Log         | 实例宕机、启动失败、主从异常必看         |
+| 2    | Slow Query Log    | 性能优化、定位慢 SQL                     |
+| 3    | Binary Log        | 主从复制、数据恢复、审计、Canal/Debezium |
+| 4    | Redo Log          | 调优 innodb_log_file_size、刷脏页策略    |
+| 5    | General Query Log | 极少开（除非审计所有语句）               |
 
 
 
