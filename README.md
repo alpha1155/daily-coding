@@ -3143,7 +3143,7 @@ Spring Boot 通过 Spring 框架的事务管理模块来支持事务操作。事
 
 答：同一个包下可以，不同包不行。因为 CGLIB 生成的子类和目标类默认在同一个包，跨包就看不到 protected 方法了。
 
-## 15、Spring 的事务？
+## 15、Spring 的事件？
 
 “Spring 的事件机制是典型的**观察者模式**，核心就 3 个角色 + 1 个执行器：
 
@@ -4601,9 +4601,74 @@ return 0
    1. Headers是一个键值对,可以定义成Hashtable。发送者在发送的时候定义一些键值对，接收者也可以再绑定时候传入一些键值对，两者匹配的话，则对应的队列就可以收到消息。匹配有两种方式all和any。这两种方式是在接收端必须要用键值"x-mactch"来定义。
 5. Default Exchange 是 RabbitMQ 内置、隐式、不可声明 的 Direct 类型交换机，名字为 ""（空字符串）。 作用：当生产者不指定 Exchange 时，自动路由到 routingKey == 队列名 的队列，实现 “直连队列” 效果。
 
+```mermaid
+graph LR
+    Producer[Outbox Relay]  
+    Exchange((Topic Exchange<br/>ems.entitlement.topic)) 
+    Q_Audit((Queue:<br/>ems.audit.queue))
+    Q_Process((Queue:<br/>ems.fulfillment.queue))
+    
+    Producer -->|1. Send<br/>Routing Key: entitlement.update| Exchange
+    
+    Exchange --"2. Binding Key: entitlement.#<br/>(Match!)"--> Q_Audit
+    Exchange --"2. Binding Key: entitlement.update<br/>(Match!)"--> Q_Process
+    
+    Q_Audit -->|3. Listen| C1[Consumer: 审计服务]
+    Q_Process -->|3. Listen| C2[Consumer: 履约服务]
+    
+    style Exchange fill:#f9f,stroke:#333,stroke-width:2px
+    style Producer fill:#ccf,stroke:#333
+    style Q_Audit fill:#cfc,stroke:#333
+    style Q_Process fill:#cfc,stroke:#333
+```
 
 
 
+
+    
+
+```
+@Configuration
+public class RabbitConfig {
+
+    // 1. 定义一个 Topic Exchange (最常用)
+    @Bean
+    public TopicExchange entitlementExchange() {
+        // durable(true): 重启后交换机还在
+        return new TopicExchange("ems.entitlement.topic", true, false);
+    }
+
+    // 2. 定义具体的队列 (给审计服务用的)
+    @Bean
+    public Queue auditQueue() {
+        return new Queue("ems.audit.queue", true);
+    }
+    
+    // 3. 定义队列 (给下游履约服务用的)
+    @Bean
+    public Queue fulfillmentQueue() {
+        return new Queue("ems.fulfillment.queue", true);
+    }
+
+    // 4. 【关键】绑定关系 (Binding)
+    
+    // 审计队列：想听所有关于 entitlement 的事
+    @Bean
+    public Binding bindingAudit() {
+        return BindingBuilder.bind(auditQueue())
+                .to(entitlementExchange())
+                .with("entitlement.#"); // 匹配 entitlement.update, entitlement.delete 等
+    }
+
+    // 履约队列：只关心权益“更新”这件事
+    @Bean
+    public Binding bindingFulfillment() {
+        return BindingBuilder.bind(fulfillmentQueue())
+                .to(entitlementExchange())
+                .with("entitlement.update"); // 精确匹配 update
+    }
+}
+```
 
 # 数据库
 
@@ -6281,7 +6346,7 @@ for (Map.Entry<String, Integer> entry : map.entrySet()) {
 为世界 500 强制造、能源、零售客户交付一套完全自研的企业级 SaaS 权益管理与智能决策平台（非直接使用标准产品，而是基于 SAP BTP 扩展能力深度定制），实现许可证、订阅、服务、保修等权益的建模、生命周期自动化管理、下游履约编排以及实时分析决策。核心服务统一部署于 SAP BTP Cloud Foundry 多地区环境，采用 Spring Boot 3 + Spring Cloud微服务架构，配合 Redis 分布式缓存 + RabbitMQ实现异步解耦、事件驱动与最终一致性，结合 SAP HANA Cloud 多租户支撑秒级高并发复杂分析查询，通过 Resilience4j 全套（熔断、重试、限流、舱壁）+ Redis 分布式令牌桶保障系统高可用，通过postman和WDI5构建起覆盖API和UI的E2E测试方案， Feature Toggle 机制实现了灰度发布、A/B 测试和生产环境的动态风险管控，基于 GitHub Actions + Jenkins + Docker + CF CLI 构建全链路 CI/CD 与 Dev/Stage/Prod 多环境自动化部署体系，配合 XSUAA + SaaS Provisioning + Destination/Connectivity Service 实现多租户自动化开通与客户 S/4HANA 安全直连。
 
 设计并实现客户可编程的权益批量自动化引擎（Entitlement Process），外部客户仅需一次 HTTP 调用即可驱动查询+批量更新权益；采用同步/异步双模式统一入口：1. 同步模式通过 OpenFeign 直连内部高性能微服务实时返回结果；2. 异步模式结合本地事务+Outbox 表可靠投递至 RabbitMQ，快速返回 202，后端独立process服务消费执行,基于内存的临时状态判断机制确保单次数据库提交内的规则逻辑一致性与高效处理，核心写阶段使用 HANA 单语句原子 MERGE + 行级排他锁 + 内置乐观锁实现全量原子提交，单 Process 1000 条耗时 <150ms。
-核心查询接口 QueryV2 的重构调优工作，在解决随数据量增长带来的性能瓶颈，确保系统支持百万级权益的秒级并发查询。1>性能瓶颈分析与解决： 利用 OpenTelemetry 与 Dynatrace 进行全链路追踪，精确定位慢查询根源于应用层复杂数据聚合。2>架构优化与代码下推： 采用 SAP HANA Cloud (列存) 架构，将复杂查询逻辑从 Spring Boot 应用服务下推至数据库层，通过构建优化的 Calculation Views，利用 HANA 内存计算能力实现并行计算，避免昂贵的数据传输。3>多层级缓存与弹性： 引入 Redis 分布式缓存缓解数据库压力，并使用 Resilience4j（限流、熔断）策略保障接口稳定性。
+核心查询接口 QueryV2 的重构调优工作，在解决随数据量增长带来的性能瓶颈，确保系统支持百万级权益的秒级并发查询。架构优化与代码下推： 采用 SAP HANA Cloud (列存) 架构，将复杂查询逻辑从 Spring Boot 应用服务下推至数据库层，通过构建优化的 Calculation Views，利用 HANA 内存计算能力实现并行计算，避免昂贵的数据传输。并使用 Resilience4j（限流、熔断）策略保障接口稳定性。
 开发测试环境 DB Cleaner 微服务，提供 HTTP API，一键清空与重建环境，动态解析 HANA SYS.REFERENTIAL_CONSTRAINTS 外键依赖，计算拓扑排序并自动依序执行 TRUNCATE / 分区级删除，清理效率提升 80%+；同时基于事务包裹 Clean + Init SQL Script，失败自动回滚，保证 “要么全部成功，要么不改动”，Redis 分布式锁防止并发冲突；
 基于Spring AI 的LLM-Driven Script Generator），设计并实现“自然语言需求 → 可执行JS脚本”一键生成功能，结合 Prompt Engineering 调用内部Gemini模型；生成脚本统一封装为function executeStep(page, data, utils) 标准格式，与现有框架无缝集成内置代码格式化、失败自动重试机制，生成成功率稳定 93%+。
 基于WDI5的UI 自动化测试平台架构设计、实现和CI/CD流程设计：
@@ -6381,6 +6446,146 @@ for (Map.Entry<String, Integer> entry : map.entrySet()) {
 - **架构决策：** 这是一个**正确的架构决策**。你牺牲了微乎其微的极限 I/O 性能，换取了系统的**可扩展性、可测试性和复杂的业务逻辑处理能力**。
 
 ## 4、限制1000条，在查询时直接分页，得到返回数据查看是否超过，超过直接报错，这样只需要查一次
+
+## 5、RabbitMQ 如何保证消息一定不丢？消费者失败了怎么保证数据一致性？
+
+
+
+**考察点：** `分布式事务`，`Transactional Outbox 模式`，`CAP 理论（AP + 最终一致性）`，`幂等性设计`，`死信队列（DLQ）`，`Saga 模式`
+
+**标准答案（面试回答）：**
+
+> **一句话总结：** 保证消息不丢，必须在 **生产端、服务端（Broker）、消费端** 三个环节同时设防。
+>
+> - **生产端：** 采用 **“本地事务 + Transactional Outbox（发件箱模式）”**，彻底解决“数据库写入与发消息”的原子性问题。
+> - **服务端：** 开启 Exchange/Queue/Message 的 **持久化**。
+> - **消费端：** 开启 **手动 ACK**，配合 **本地幂等表** 防止重复消费。
+
+
+
+## 6、EntitlementProcess 
+
+| **步骤**             | **服务**     | **动作**                                         | **状态流转 / 原子性保障**                                    |
+| -------------------- | ------------ | ------------------------------------------------ | ------------------------------------------------------------ |
+| **1. 接收与开始**    | API Service  | 接收客户端的异步更新请求 (`/entitlement/update`) | **开启本地事务 (TX)**                                        |
+| **2. 记录 Inbound**  | API Service  | 写入 `INBOUND_LOG`                               | 记录请求原始信息，状态：`NEW`                                |
+| **3. 记录 Outbound** | API Service  | 写入 `OUTBOUND_LOG`                              | 记录待发送的事件，状态：`NEW`                                |
+| **4. 提交 TX**       | API Service  | 提交本地事务并返回 `202`                         | **原子性保障：** Inbound/Outbound 日志和业务请求被原子提交。 |
+| **5. 后台投递**      | Relay Thread | 轮询 `OUTBOUND_LOG` 表，发现状态为 `NEW` 的记录  |                                                              |
+| **6. 发送与标记**    | Relay Thread | 将事件发布到 RabbitMQ                            | `OUTBOUND_LOG` 状态更新为 **`WAITING`**（表明已进入 MQ，等待消费端启动处理） |
+
+| **步骤**             | **服务**       | **动作**                                          | **状态流转 / 原子性保障**                                    |
+| -------------------- | -------------- | ------------------------------------------------- | ------------------------------------------------------------ |
+| **1. 接收消息**      | Process Worker | 接收 RabbitMQ 推送的消息                          | **启动本地事务 (TX)**                                        |
+| **2. 标记开始**      | Process Worker | 写入 `PROCESS_LOG`                                | 消费者自身的处理日志，状态：**`RUNNING`**                    |
+| **3. 标记 Outbound** | Process Worker | **回写 API Service 的 `OUTBOUND_LOG`**            | **关键步骤：** 标记生产者日志，状态更新为 **`RUNNING`**（表明消费者已开始处理） |
+| **4. 核心更新**      | Process Worker | 查询 Entitlement，执行 Update 逻辑 (HANA `MERGE`) |                                                              |
+
+| **步骤**             | **服务**       | **动作**                                 | **状态流转 / 原子性保障**                                    |
+| -------------------- | -------------- | ---------------------------------------- | ------------------------------------------------------------ |
+| **5. 标记成功**      | Process Worker | Update Entitlement **成功**              |                                                              |
+| **6. 标记日志**      | Process Worker | 更新 `PROCESS_LOG`                       | 状态更新为 **`SUCCESS`**                                     |
+| **7. 标记 Outbound** | Process Worker | 更新 API Service 的 `OUTBOUND_LOG`       | 状态更新为 **`SUCCESS`**（整个流程结束）                     |
+| **8. 级联事件**      | Process Worker | **插入新的 `OUTBOX_EVENT` 记录**         | **Consumer-as-Producer：** 触发新的事件，例如 `entitlement.updated.success`，状态：`NEW` |
+| **9. 提交 ACK**      | Process Worker | 提交本地事务，并向 RabbitMQ 发送 **ACK** | **原子性闭环：** Entitlement 更新、日志标记、新事件生成全部原子提交，然后 ACK 移除旧消息。 |
+
+| **步骤**             | **服务**       | **动作**                                            | **状态流转 / 补偿**                                          |
+| -------------------- | -------------- | --------------------------------------------------- | ------------------------------------------------------------ |
+| **5. 标记失败**      | Process Worker | Update Entitlement **失败**（如乐观锁冲突、DB异常） |                                                              |
+| **6. 标记日志**      | Process Worker | 更新 `PROCESS_LOG`                                  | 状态更新为 **`FAIL`**，记录错误信息                          |
+| **7. 标记 Outbound** | Process Worker | 更新 API Service 的 `OUTBOUND_LOG`                  | 状态更新为 **`FAIL`**                                        |
+| **8. 回滚 TX**       | Process Worker | **回滚失败本地事务**                                | 确保所有日志、Entitlement 状态回到初始状态。                 |
+| **9. NACK/DLQ**      | Process Worker | 向 RabbitMQ 发送 **NACK**                           | **进入重试队列或死信队列 (DLQ)**，等待人工介入或自动补偿机制。 |
+
+Dead Letter Queue
+
+## 7、表格-虚拟列映射
+
+## 8、Entitlement 查询和更新
+
+查询：
+
+**第一板斧：基于业务维度的‘硬过滤’（Hard Filter）。** 我们分析发现 `Entitlement Model Code` 具有极高区分度。我将其定义为 Calculation View 的 **强制输入参数 (Mandatory Input Parameter)**，而不是写在 WHERE 子句里。
+
+**第二板斧：基于动态 SQL 的‘软过滤’（Soft Filter）。** 针对前端复杂的组合筛选，我使用了 SQLScript 的 **`APPLY_FILTER`** 函数，在已经大幅缩减的数据集上动态应用逻辑，避免了 Java 拼接 SQL 导致的执行计划不稳定。
+
+```sql
+CREATE PROCEDURE GET_ENTITLEMENTS_OPTIMIZED (
+    IN I_MODEL_CODE NVARCHAR(50),      -- 【硬参数】高区分度维度，必须单独传
+    IN I_DYNAMIC_FILTER NVARCHAR(5000),-- 【软参数】前端动态拼接的复杂条件
+    OUT O_RESULT TABLE (...)
+)
+LANGUAGE SQLSCRIPT READS SQL DATA AS
+BEGIN
+    -- 1. 第一阶段：硬过滤 (Hard Filter)
+    -- 利用 Input Parameter 将 Model Code 强行下推到视图最底层
+    -- 此时拿到的 PRE_FILTERED_DATA 只有几万条，速度极快
+    PRE_FILTERED_DATA = SELECT * FROM "CV_ENTITLEMENT_QUERY"
+                        (PLACEHOLDER = ('$$IP_MODEL_CODE$$', :I_MODEL_CODE));
+
+    -- 2. 第二阶段：软过滤 (Soft Filter)
+    -- 在小数据集上应用复杂的动态逻辑 (AND/OR/Like)
+    -- APPLY_FILTER 的 CPU 消耗因此降低了几个数量级
+    APPLY_FILTER(:PRE_FILTERED_DATA, :I_DYNAMIC_FILTER) INTO O_RESULT;
+END;
+```
+
+```java
+public void query(String modelCode, QueryRequest req) {
+    // 1. 硬参数直接提取
+    String hardParam = modelCode;
+    
+    // 2. 软参数动态构建 (OData 风格或 SQL 片段)
+    // 例如: "STATUS = 'Active' AND (QTY > 100 OR REGION = 'CN')"
+    String softParam = queryBuilder.buildDynamicFilter(req); 
+    
+    // 3. 调用存储过程
+    repo.callStoredProcedure("GET_ENTITLEMENTS_OPTIMIZED", hardParam, softParam);
+}
+```
+
+| **方案**             | **适用场景**   | **结合 Model Code 后的变化**                                 |
+| -------------------- | -------------- | ------------------------------------------------------------ |
+| **纯动态 SQL 拼接**  | ❌ **淘汰**     | Model Code 混在 Where 子句中，HANA 可能选错执行计划，导致全表扫描。 |
+| **Input Parameters** | ✅ **硬过滤**   | **将 Model Code 定义为必填输入参数**。这是性能优化的基石，利用其高区分度特性实现物理级剪枝。 |
+| **APPLY_FILTER**     | ✅ **软过滤**   | 用于处理除 Model Code 之外的、用户随意的组合筛选。           |
+| **临时表 Join**      | ⚠️ **特定场景** | 依然适用于 Excel 导入等海量 ID 筛选场景，但也可以结合 Model Code 进行分区优化。 |
+
+### 更新
+
+复杂的验证逻辑，在JVM执行后更正
+
+**临时表驱动 (Temporary Table Driven)**
+
+1. **Insert:** 将这 1000 个计算好的结果（ID, NewQty, OldVersion）批量插入到 HANA 的一张 **全局临时表 (GTT)**。
+2. **Merge:** 发送 **一条** SQL，让 HANA 执行表对表的合并更新。
+
+SQL
+
+```
+-- 一次性完成 1000 条更新 + 乐观锁检查
+MERGE INTO "ENTITLEMENT_ITEMS" AS T
+USING "TEMP_UPDATE_BUFFER" AS S  -- 你的临时表
+ON (T."ID" = S."ID")
+WHEN MATCHED AND T."VERSION" = S."OLD_VERSION" THEN
+    UPDATE SET 
+        T."QUANTITY" = S."NEW_QUANTITY",
+        T."VERSION" = T."VERSION" + 1;
+```
+
+**检查结果：** 执行完后，检查 `TEMP_UPDATE_BUFFER` 的行数和 `MERGE` 的 `ROW_COUNT` 是否一致。如果不一致，说明有乐观锁冲突。
+
+#### 利用 HANA 原生“系统版本表” (System-Versioned Tables) —— 强烈推荐
+
+
+
+这是 SAP HANA 专门为“审计”、“历史追溯”设计的功能。你完全不需要修改你的 `MERGE` 语句，也不需要写任何 Java 代码来记录历史。
+
+- **原理：** 你告诉 HANA：“这张表我要记录历史。” HANA 会自动创建一个影子表（History Table）。 当你对主表执行 `UPDATE` 或 `MERGE` 时，**HANA 引擎会自动把“旧版本”的那一行数据剪切、移动到历史表中，并打上时间戳。**
+
+
+
+
 
 
 
