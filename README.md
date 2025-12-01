@@ -4625,7 +4625,7 @@ graph LR
 
 
 
-    
+​    
 
 ```
 @Configuration
@@ -5189,15 +5189,7 @@ EXPLAIN SELECT * FROM orders WHERE user_id = 100 AND order_date > '2024-01-01';
 
 ## 21、分库分表
 
-## 22、日志
 
-| 排名 | 日志类型          | 常见用途                                 |
-| ---- | ----------------- | ---------------------------------------- |
-| 1    | Error Log         | 实例宕机、启动失败、主从异常必看         |
-| 2    | Slow Query Log    | 性能优化、定位慢 SQL                     |
-| 3    | Binary Log        | 主从复制、数据恢复、审计、Canal/Debezium |
-| 4    | Redo Log          | 调优 innodb_log_file_size、刷脏页策略    |
-| 5    | General Query Log | 极少开（除非审计所有语句）               |
 
 
 
@@ -6511,30 +6503,69 @@ Dead Letter Queue
 
 ## 8、Entitlement 查询和更新
 
+如果只查model，调用一个**预编译好的、极简的**Native SQL
+
+-  绕过了所有复杂的字符串拼接和存储过程调用逻辑，代码路径最短，RT（响应时间）最低。
+
+复杂查询
+
+- 限制输出参数
+- 动态where
+- 通过 `EXECUTE IMMEDIATE` 和白名单机制
+
+如果没有白名单限制，直接使用APPLY_FILTER
+
 查询：
+
+APPLY_FILTER
+
+- where 条件筛选计算试图
+
+EXECUTE IMMEDIATE
+
+- 传入select的参数
+
+分页
 
 **第一板斧：基于业务维度的‘硬过滤’（Hard Filter）。** 我们分析发现 `Entitlement Model Code` 具有极高区分度。我将其定义为 Calculation View 的 **强制输入参数 (Mandatory Input Parameter)**，而不是写在 WHERE 子句里。
 
 **第二板斧：基于动态 SQL 的‘软过滤’（Soft Filter）。** 针对前端复杂的组合筛选，我使用了 SQLScript 的 **`APPLY_FILTER`** 函数，在已经大幅缩减的数据集上动态应用逻辑，避免了 Java 拼接 SQL 导致的执行计划不稳定。
 
 ```sql
-CREATE PROCEDURE GET_ENTITLEMENTS_OPTIMIZED (
-    IN I_MODEL_CODE NVARCHAR(50),      -- 【硬参数】高区分度维度，必须单独传
-    IN I_DYNAMIC_FILTER NVARCHAR(5000),-- 【软参数】前端动态拼接的复杂条件
-    OUT O_RESULT TABLE (...)
+CREATE PROCEDURE GET_ENTITLEMENTS_PAGINATED (
+    IN I_DYNAMIC_FILTER NVARCHAR(5000),  
+    IN I_PROJECTION_STRING NVARCHAR(500),
+    IN I_LIMIT INT,                     -- 每页行数
+    IN I_OFFSET INT,                    -- 跳过的行数 (起始位置)
+    IN I_ORDER_BY NVARCHAR(100),        -- 排序字段 (例如: "ID DESC")
+    
+    OUT O_RESULT_SET TABLE (ID NVARCHAR(32), DUMMY_COL NVARCHAR(100)), -- 结果集
+    OUT O_TOTAL_COUNT INT                -- 总行数
 )
 LANGUAGE SQLSCRIPT READS SQL DATA AS
 BEGIN
-    -- 1. 第一阶段：硬过滤 (Hard Filter)
-    -- 利用 Input Parameter 将 Model Code 强行下推到视图最底层
-    -- 此时拿到的 PRE_FILTERED_DATA 只有几万条，速度极快
-    PRE_FILTERED_DATA = SELECT * FROM "CV_ENTITLEMENT_QUERY"
-                        (PLACEHOLDER = ('$$IP_MODEL_CODE$$', :I_MODEL_CODE));
+    -- 步骤 1: 声明表变量 (Filtered Data)
+    DECLARE filtered_data TABLE LIKE "CV_ENTITLEMENT_BASE"; 
 
-    -- 2. 第二阶段：软过滤 (Soft Filter)
-    -- 在小数据集上应用复杂的动态逻辑 (AND/OR/Like)
-    -- APPLY_FILTER 的 CPU 消耗因此降低了几个数量级
-    APPLY_FILTER(:PRE_FILTERED_DATA, :I_DYNAMIC_FILTER) INTO O_RESULT;
+    -- 步骤 2: APPLY_FILTER 执行软过滤
+    base_data = SELECT * FROM "CV_ENTITLEMENT_BASE"; 
+    APPLY_FILTER(:base_data, :I_DYNAMIC_FILTER) INTO filtered_data;
+
+    -- ----------------------------------------------------
+    -- 步骤 3: 【新增】计算总行数 (P8 必备)
+    -- 必须在 APPLY_FILTER 之后立即执行，以获取精确的过滤后计数
+    SELECT COUNT(*) INTO O_TOTAL_COUNT FROM :filtered_data;
+    -- ----------------------------------------------------
+
+    -- 步骤 4: 构建最终的动态 SELECT 语句 (包含排序和分页)
+    final_sql := 'SELECT ' || :I_PROJECTION_STRING || 
+                 ' FROM :filtered_data ' ||
+                 ' ORDER BY ' || :I_ORDER_BY ||        -- 确保结果稳定
+                 ' LIMIT ' || :I_LIMIT ||              -- 限制每页数量
+                 ' OFFSET ' || :I_OFFSET;              -- 设定起始位置
+    
+    -- 步骤 5: 执行动态投影
+    EXECUTE IMMEDIATE :final_sql INTO O_RESULT_SET;
 END;
 ```
 
@@ -6591,7 +6622,68 @@ WHEN MATCHED AND T."VERSION" = S."OLD_VERSION" THEN
 
 - **原理：** 你告诉 HANA：“这张表我要记录历史。” HANA 会自动创建一个影子表（History Table）。 当你对主表执行 `UPDATE` 或 `MERGE` 时，**HANA 引擎会自动把“旧版本”的那一行数据剪切、移动到历史表中，并打上时间戳。**
 
+## 9.Database clearer
 
+我是你的 P8 面试官。你引用的这句话是整个项目描述中，最能体现你的 **架构思维和工程化能力** 的部分之一。
+
+这表明你不仅仅是一个业务开发者，更是一个关注 **DevOps 效率和底层算法** 的高级工程师。
+
+这句话描述的是一个 **“智能环境清理工具”** 的核心算法，它将 **数据库元数据** 与 **图论算法** 完美结合，解决了测试环境中一个长期存在的痛点。
+
+------
+
+
+
+### 1. 概念拆解与技术映射
+
+
+
+我们将这句话拆解为三个步骤，理解其技术内涵：
+
+| **步骤**            | **技术术语**                       | **作用 / 目标**                                | **P8 级解读**                                                |
+| ------------------- | ---------------------------------- | ---------------------------------------------- | ------------------------------------------------------------ |
+| **1. 动态解析依赖** | `HANA SYS.REFERENTIAL_CONSTRAINTS` | 动态获取所有表之间的**外键（FK）关系**。       | **元数据驱动：** 避免硬编码，系统增加新表无需修改清理逻辑。  |
+| **2. 计算拓扑排序** | `计算拓扑排序`                     | 根据 FK 关系，计算出数据表**正确的删除顺序**。 | **算法应用：** 将数据库依赖关系映射为有向图，应用图论算法（如 Kahn 算法或深度优先搜索）解决依赖问题。 |
+| **3. 自动依序执行** | `TRUNCATE / 分区级删除`            | 按照安全顺序，执行最快的数据清空操作。         | **性能优化：** 使用 TRUNCATE (DDL 操作，速度远快于 DELETE)，并通过分区级删除优化超大表的清理效率。 |
+
+------
+
+
+
+### 2. 这个方案解决了什么核心问题？（The Why）
+
+
+
+**核心问题：外键约束导致清理失败或效率低下。**
+
+想象一下你的 `Order` 表引用了 `Customer` 表：
+
+1. **直接删除（Failure）：** 如果你先 `TRUNCATE TABLE Customer;` 数据库会报错，因为 `Order` 表里还有引用数据。
+2. **手动删除（Low Efficiency）：**
+   - 最笨的方法：`DELETE FROM Order; DELETE FROM Customer;`（效率低）。
+   - **传统方法：** 需要手动关闭所有外键约束（`ALTER TABLE DISABLE FK`），清理，再重新打开（复杂且有风险）。
+
+**你的方案 (拓扑排序) 的优势：**
+
+- **保证成功：** 拓扑排序计算出 `Order -> Customer` 的依赖关系，所以它会严格执行 `TRUNCATE Order`，然后 `TRUNCATE Customer`。整个过程在一次事务中完成，不会报错。
+- **效率极高：** `TRUNCATE` 比 `DELETE` 快得多，且能释放空间。
+
+
+
+### 3. 架构价值（P8 级总结）
+
+
+
+你在面试中应强调，这个 **DB Cleaner 微服务** 体现了你对工程化、效率和可靠性的理解：
+
+1. **领域专业性 (Domain Expertise)：** 理解 HANA 的元数据视图 (`SYS.REFERENTIAL_CONSTRAINTS`)，而不是只知道业务表。
+2. **算法能力 (Algorithm Skills)：** 将 DB 依赖问题抽象为图论问题，应用拓扑排序算法，这是高级程序员的标志。
+3. **高可靠性 (High Reliability)：**
+   - **动态性：** 不会被新表或表结构变更打断。
+   - **事务包裹：** 结合你提到的 **“基于事务包裹 Clean + Init SQL Script”**，保证了清理和数据初始化是原子的（“要么全部成功，要么不改动”）。
+   - **并发安全：** 结合 **“Redis 分布式锁”**，防止了多个 CI/CD Pipeline 同时清理测试环境导致的混乱。
+
+**结论：** 这是一个典型的 **Infrastructure as Code (IaC)** 实践，证明你能够开发复杂的、工具型的微服务来赋能整个研发和测试团队。
 
 
 
