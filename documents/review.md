@@ -644,13 +644,7 @@ public class CollectionExamples {
 
  ### 2. 可达性分析算法（Reachability Analysis）✅ **Java采用**
 
- java
 
- Download
-
- Copy
-
- Run
 
  ```
  // GC Roots 包括：
@@ -704,7 +698,7 @@ public class CollectionExamples {
  }
  ```
 
- **优点**：简单直接
+ **优点**：简单直
 
  **缺点**：产生内存碎片
 
@@ -774,20 +768,25 @@ public class CollectionExamples {
 
  ### 4. 分代收集算法（Generational Collection）✅ **Java主要采用**
 
+
+
+```
  // 根据对象生命周期将堆分为不同代
  class GenerationalGC {
      // 年轻代（Young Generation）
      private MemorySpace eden;       // 新对象分配区
      private MemorySpace survivor0;  // 存活对象区
      private MemorySpace survivor1;  // 存活对象区
+// 老年代（Old Generation）
+ private MemorySpace tenured;    // 长期存活对象
 
-     // 老年代（Old Generation）
-     private MemorySpace tenured;    // 长期存活对象
-    
-     // 永久代/元空间（PermGen/Metaspace）
-     private MemorySpace metaspace;  // 类元数据
+ // 永久代/元空间（PermGen/Metaspace）
+ private MemorySpace metaspace;  // 类元数据 }
+```
 
- }
+
+
+
 
  ## 四、Java中的垃圾收集器
 
