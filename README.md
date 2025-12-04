@@ -1,3 +1,10 @@
+1. JavaScript/nodejs/axios/koa
+2. java面试题/视频
+3. AI
+4. 面经
+5. mindmap
+6. 算法
+
 - [目录](#目录)
 - [JavaScript 基础](#javascript-基础)
   - [事件循环（Event Loop）详细解释一下，宏任务微任务分别有哪些？Promise 属于微任务还是宏任务？](#事件循环event-loop详细解释一下宏任务微任务分别有哪些promise-属于微任务还是宏任务)
@@ -309,9 +316,9 @@
     - [**1. HANA 和 MySQL / PostgreSQL 最大差别是什么？**](#1-hana-和-mysql--postgresql-最大差别是什么)
     - [**2. HANA 的列存储和行存储区别？为什么你的表用列存？**](#2-hana-的列存储和行存储区别为什么你的表用列存)
 - [✅ 二、SQL 与 Schema 设计（中高级）](#-二sql-与-schema-设计中高级)
-    - [**3. HANA 主键使用 GUID 会不会影响性能？**](#3-hana-主键使用-guid-会不会影响性能)
-    - [**4. HANA 是如何做索引的？需要手动建索引吗？**](#4-hana-是如何做索引的需要手动建索引吗)
-    - [**5. HANA 如何做分区？你们业务有没有分区？**](#5-hana-如何做分区你们业务有没有分区)
+  - [**3. HANA 主键使用 GUID 会不会影响性能？**](#3-hana-主键使用-guid-会不会影响性能)
+  - [**4. HANA 是如何做索引的？需要手动建索引吗？**](#4-hana-是如何做索引的需要手动建索引吗)
+  - [**5. HANA 如何做分区？你们业务有没有分区？**](#5-hana-如何做分区你们业务有没有分区)
   - [✅ 三、性能优化（面试最爱问）](#-三性能优化面试最爱问)
     - [**6. HANA 的 Delta Merge 是什么？你们如何处理写入性能问题？**](#6-hana-的-delta-merge-是什么你们如何处理写入性能问题)
     - [**7. 你们是否做过 SQL 优化？如何在 HANA 中查看 SQL 性能？**](#7-你们是否做过-sql-优化如何在-hana-中查看-sql-性能)
@@ -502,6 +509,10 @@
 # JavaScript 基础
 
 ## 事件循环（Event Loop）详细解释一下，宏任务微任务分别有哪些？Promise 属于微任务还是宏任务？
+
+JavaScript 运行机制的核心（JS 是单线程的，必须靠它来处理异步）。
+
+
 
 - **同步任务**：在主线程上执行，形成执行栈（Call Stack）。
 - **Event Loop 流程**：
@@ -7323,7 +7334,7 @@ WHEN MATCHED AND T."VERSION" = S."OLD_VERSION" THEN
 
 **结论：** 这是一个典型的 **Infrastructure as Code (IaC)** 实践，证明你能够开发复杂的、工具型的微服务来赋能整个研发和测试团队。
 
-10.代码分析
+## 10.代码分析
 
 ## 1. 🔍 版本范围变更的必要性
 
@@ -7388,13 +7399,11 @@ WHEN MATCHED AND T."VERSION" = S."OLD_VERSION" THEN
   - **失败/重试：** 如果捕获到 `MQRequeueException`，则执行 `channel.basicNack(deliveryTag, true, true)`，指示 RabbitMQ **拒绝**消息，并要求**重新排队**。这是实现**至少一次投递**和**消息重试机制**的关键。
 - **业务调用：** 通过 Java **反射** (`method.invoke`) 调用业务逻辑，并传入反序列化后的消息体和处理上下文 (`headers`)。
 
+## PS:
 
-
-（Eureka 服务注册与发现、Cloud LoadBalancer + OpenFeign 声明式调用），
-
-SAP HANA Cloud 多租户架构（Container-per-Tenant + 动态数据源切换 + Calculation View 列存建模 + CDS Views）
-
-日均处理API 调用300~800 万，QPS 峰值 800，RT < 500ms，服务可用性 99.95%+。
+- Eureka 服务注册与发现、Cloud LoadBalancer + OpenFeign 声明式调用
+- SAP HANA Cloud 多租户架构（Container-per-Tenant + 动态数据源切换 + Calculation View 列存建模 + CDS Views）
+- 日均处理API 调用300~800 万，QPS 峰值 800，RT < 500ms，服务可用性 99.95%+。
 
 ```
 Client（Browser / Fiori Launchpad）
@@ -7453,9 +7462,7 @@ RabbitMQ（Enterprise Messaging，vhost 租户隔离，稳定运行中）
 1. **强一致性场景**（如 DB Cleaner 全量数据初始化） → 使用 **Redisson 分布式锁（基于 tenantId 加锁）** + 数据库本地事务组合 → 保证同一时刻只有一个实例能初始化某个 tenant 的数据，初始化过程（truncate + insert 预置数据）放在一个数据库事务里，要么全成功要么全滚，完美解决并发冲突问题。
 2. **最终一致性场景**（如 AI 生成脚本后需要写库 + 更新缓存 + 发 MQ 通知） → 采用 **本地事务 + 可靠消息（RabbitMQ 生产者确认 + 死信队列）** 方案 → 先写库成功 → 再发消息 → 消费者更新 Redis 缓存 + 推送 WebSocket → 即使消息丢失，也有定时补偿任务扫描数据库进行兜底
 
-选择了更轻量、更可控的『分布式锁 + 本地事务 + 最终一致性』
-
-性能损耗和业务侵入性-Seata AT
+分布式锁 + 本地事务 + 最终一致性
 
 
 
@@ -7466,21 +7473,12 @@ RabbitMQ（Enterprise Messaging，vhost 租户隔离，稳定运行中）
 
 
 
-
-#### 1. 项目背景 & 定位（30 秒）
-“这个系统是 SAP 全球统一的 SaaS 权限与配置中台，前端是 SAP UI5（Fiori），后端是 Java Spring Boot 微服务集群，部署在 BTP（Cloud Foundry）多区域（AWS / Azure / AliCloud），支持全球上万个企业客户（多租户），核心功能包括：
-- 用户权限分配（Entitlement）
-- 系统配置下发（Configuration）
-- 事件驱动任务调度（Event Management）
-- 亿级日志与监控（Monitor Service）”
 
 **1. 高并发 Query V2 接口（全系统调用量 Top1）**
 - 日均调用 1.2 亿次，峰值 QPS 5200+
 - 原来是 8 张表多表联查 + 循环嵌套，平均 RT 800ms+，超时率 30%
 - 我主导重构：
   → 单条聚合 SQL + 结果集 DTO 映射优化
-  → 引入 Caffeine 本地缓存 + Redis 分布式缓存（key 设计：tenantId:userId:version）
-  → 热点数据预加载 + 按租户分片
   → 最终 RT 从 800ms → 42ms，QPS 承载能力提升 6 倍，缓存命中率 99.2%
 
 **2. Update V2 接口 + 分布式一致性保障（分布式事务经典场景）**
@@ -7511,9 +7509,18 @@ RabbitMQ（Enterprise Messaging，vhost 租户隔离，稳定运行中）
 - CI/CD：GitHub Actions + Docker + Cloud Foundry 一键部署
 
 ### 结尾金句（面试官听了直接跪）
-“这个项目让我从 0 到 1 完整经历了企业级 SaaS 系统的全生命周期设计，包括多租户架构、高并发优化、分布式一致性、微服务治理、全链路可观测性，是我职业生涯含金量最高的项目。目前 query v2 和 update v2 两个接口我还是主要维护人。”
+多租户架构、高并发优化、分布式一致性、微服务治理、全链路可观测性
 
 怎么解决分布式事务？
+
+| 项目         | 真实实现（你们项目就是这么干的）                             | 关键点                          |
+| ------------ | ------------------------------------------------------------ | ------------------------------- |
+| Outbox 表名  | `outbox_events`（和业务表同库同事务）                        | 主键 id + process_id + sequence |
+| 投递方式     | **轮询投递器（Polling Publisher）**，每 200ms 扫一次未发布事件（status=PENDING） | 比 Debezium 更轻量，更可控      |
+| 事务边界     | `@Transactional` 包裹整个业务 + outbox 插入，Spring 自动一个 HANA 事务 | 零丢失铁律                      |
+| 消息去重     | 事件表加唯一约束 `(process_id, event_type)` + 投递成功后标记 `status=PUBLISHED` | 零重复                          |
+| 投递失败重试 | 投递器捕获异常 → 标记 `status=FAILED` + 指数退避重试，最多 10 次，失败进死信表人工介入 | 最终一致                        |
+| 顺序保证     | 同一 process_id 的事件按 `sequence` 顺序投递 + Worker 单线程消费同 process_id | 严格顺序                        |
 
 “我们的核心链路全部采用成熟的‘本地事务 + 可靠事件（Outbox Pattern）’方案，避免使用 XA 和复杂 Saga 框架，理由是性能、稳定性、可运维性都最优。
 
@@ -7528,21 +7535,19 @@ RabbitMQ（Enterprise Messaging，vhost 租户隔离，稳定运行中）
 
 | 排名 | 必问题目                                               | 标准答案关键词（背会就行）                                   |
 | ---- | ------------------------------------------------------ | ------------------------------------------------------------ |
-| 1    | 你们微服务怎么做注册发现的？Eureka 有单点问题吗？      | “Eureka 2.x 已停止维护，我们正在迁移 Nacos，Nacos 支持 CP+AP 双模式，配置中心也一起解决” |
 | 2    | RabbitMQ 有消息丢失、重复消费问题吗？怎么保证可靠性？  | “生产者确认 + 手动 ack + 死信队列；但我们正在评估换 Kafka，用分区+副本天然可靠” |
 | 3    | 数据中台怎么保证数据一致性？（尤其是 DB Cleaner 那块） | “先 truncate 禁用外键 → 批量 insert 预置数据 → 启用外键，全程在一个数据库事务 + Redisson 分布式锁，保证多实例不冲突” |
-| 4    | Spring AI 调用大模型，超时、幻觉、敏感词怎么处理？     | “统一封装 Feign Client，设置 30s 超时 + 重试；返回结果用 Prompt 要求 JSON 格式 + 后置 JSON Schema 校验；敏感词用正则 + 阿里云内容安全接口双保险” |
+| 4    | Spring AI 调用大模型，超时、幻觉、敏感词怎么处理？     | “统一封装 Feign Client，设置 30s 超时 + 重试；返回结果用 Prompt 要求 JSON 格式 + 后置 JSON Schema 校验；敏感词用正则 + 内容安全接口双保险” |
 | 5    | HANA 数据库和 MySQL 区别？为什么用 HANA？              | “列式存储 + 内存计算，适合 SAP 复杂分析查询；我们权限元数据查询原来 7 表关联 3 秒，换 HANA 后 80ms” |
 
 
 
 
 
-| 类别          | 必须马上补的知识点                              | 为什么大厂 2025 年必问？           | 建议补法（1 周搞定）                                    |
-| ------------- | ----------------------------------------------- | ---------------------------------- | ------------------------------------------------------- |
-| 3. 分布式事务 | 目前完全没有提到                                | 微服务必问：最终一致性 vs 强一致性 | 掌握 Seata AT 模式、TCC 模式、RocketMQ 事务消息三种方案 |
-| 4. 链路追踪   | 完全没提（Skywalking / Jaeger / OpenTelemetry） | 所有微服务项目必问故障定位         | 了解 OpenTelemetry + Jaeger 基本概念，会看 trace 就行   |
-| 5. 网关与限流 | Spring Cloud Gateway + Sentinel/Resilience4j    | 所有对外服务必问流量防护           | 会说 Sentinel 熔断降级、热点参数限流                    |
+| 类别          | 必须马上补的知识点                              | 为什么大厂 2025 年必问？   | 建议补法（1 周搞定）                                  |
+| ------------- | ----------------------------------------------- | -------------------------- | ----------------------------------------------------- |
+| 4. 链路追踪   | 完全没提（Skywalking / Jaeger / OpenTelemetry） | 所有微服务项目必问故障定位 | 了解 OpenTelemetry + Jaeger 基本概念，会看 trace 就行 |
+| 5. 网关与限流 | Spring Cloud Gateway + Sentinel/Resilience4j    | 所有对外服务必问流量防护   | 会说 Sentinel 熔断降级、热点参数限流                  |
 
 ### 怎么操作HANA数据库？
 
