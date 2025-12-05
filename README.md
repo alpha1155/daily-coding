@@ -7336,7 +7336,7 @@ WHEN MATCHED AND T."VERSION" = S."OLD_VERSION" THEN
 
 ## 10.代码分析
 
-## 1. 🔍 版本范围变更的必要性
+### 1. 🔍 版本范围变更的必要性
 
 在 Maven 中，使用版本范围（如 `[3.1.0, 3.2.0)`）在部署到 **生产环境或 CI/CD 流水线** 时，可以自动获取指定范围内的**最新**版本，这在某些大型项目或库版本快速迭代时很有用。
 
@@ -7350,7 +7350,7 @@ WHEN MATCHED AND T."VERSION" = S."OLD_VERSION" THEN
 
 ------
 
-## 2. 🛡️ `JWTAnalyzer.java` (安全与多租户)
+### 2. 🛡️ `JWTAnalyzer.java` (安全与多租户)
 
 该类是整个安全机制的核心，负责解析传入的 JWT Token，从中提取用户、权限和**多租户**信息。
 
@@ -7367,7 +7367,7 @@ WHEN MATCHED AND T."VERSION" = S."OLD_VERSION" THEN
 
 ------
 
-## 3. 🧪 `EmsToggleFeatureEnum.java` (特性开关/Togglz)
+### 3. 🧪 `EmsToggleFeatureEnum.java` (特性开关/Togglz)
 
 该枚举类负责实现项目的 **Feature Toggle (灰度发布/A/B测试)** 机制。
 
@@ -7382,7 +7382,7 @@ WHEN MATCHED AND T."VERSION" = S."OLD_VERSION" THEN
 
 ------
 
-## 4. ✉️ `AmqpMessageReceiver.java` (异步消息处理)
+### 4. ✉️ `AmqpMessageReceiver.java` (异步消息处理)
 
 该类是一个 RabbitMQ 消息监听器，负责消费来自 RabbitMQ 队列的消息，并执行业务逻辑。它同时承担了**多租户隔离**、**分布式锁**、**日志追踪**和**可靠投递确认**等关键职责。
 
@@ -7398,6 +7398,27 @@ WHEN MATCHED AND T."VERSION" = S."OLD_VERSION" THEN
   - **成功：** `channel.basicAck(deliveryTag, true)` - 确认消息已被成功处理。
   - **失败/重试：** 如果捕获到 `MQRequeueException`，则执行 `channel.basicNack(deliveryTag, true, true)`，指示 RabbitMQ **拒绝**消息，并要求**重新排队**。这是实现**至少一次投递**和**消息重试机制**的关键。
 - **业务调用：** 通过 Java **反射** (`method.invoke`) 调用业务逻辑，并传入反序列化后的消息体和处理上下文 (`headers`)。
+
+## 11、事务一致性
+
+典型的**多租户 SaaS 架构**，同一个服务实例集群支持上百个 tenant，每个 tenant 独立路由 + 独立数据库。
+
+分布式事务我们分了两种场景处理：
+
+1. **强一致性场景**（如 DB Cleaner 全量数据初始化） → 使用 **Redisson 分布式锁（基于 tenantId 加锁）** + 数据库本地事务组合 → 保证同一时刻只有一个实例能初始化某个 tenant 的数据，初始化过程（truncate + insert 预置数据）放在一个数据库事务里，要么全成功要么全滚，完美解决并发冲突问题。
+2. **最终一致性场景**（如 AI 生成脚本后需要写库 + 更新缓存 + 发 MQ 通知） → 采用 **本地事务 + 可靠消息（RabbitMQ 生产者确认 + 死信队列）** 方案 → 先写库成功 → 再发消息 → 消费者更新 Redis 缓存 + 推送 WebSocket → 即使消息丢失，也有定时补偿任务扫描数据库进行兜底
+
+分布式锁 + 本地事务 + 最终一致性
+
+
+
+## 12、动态数据源切换
+
+在EMS项目中，我们采用 **ThreadLocal + AbstractRoutingDataSource + HANA Database-per-Tenant** 实现毫秒级租户数据源动态切换：每个租户独享一个独立的HANA数据库实例（而非共享数据库下的Schema隔离），结合 XSUAA JWT 自动解析 tenantId + HDI Container 共享连接池，做到真正物理隔离 + 零侵入 + 高性能，已稳定支撑全球 380+ 租户并发访问，单租户查询延迟增加 < 3ms。
+
+
+
+
 
 ## PS:
 
@@ -7454,15 +7475,6 @@ RabbitMQ（Enterprise Messaging，vhost 租户隔离，稳定运行中）
 
 
 
-
-典型的**多租户 SaaS 架构**，同一个服务实例集群支持上百个 tenant，每个 tenant 独立路由 + 独立数据库 schema。
-
-分布式事务我们分了两种场景处理：
-
-1. **强一致性场景**（如 DB Cleaner 全量数据初始化） → 使用 **Redisson 分布式锁（基于 tenantId 加锁）** + 数据库本地事务组合 → 保证同一时刻只有一个实例能初始化某个 tenant 的数据，初始化过程（truncate + insert 预置数据）放在一个数据库事务里，要么全成功要么全滚，完美解决并发冲突问题。
-2. **最终一致性场景**（如 AI 生成脚本后需要写库 + 更新缓存 + 发 MQ 通知） → 采用 **本地事务 + 可靠消息（RabbitMQ 生产者确认 + 死信队列）** 方案 → 先写库成功 → 再发消息 → 消费者更新 Redis 缓存 + 推送 WebSocket → 即使消息丢失，也有定时补偿任务扫描数据库进行兜底
-
-分布式锁 + 本地事务 + 最终一致性
 
 
 
