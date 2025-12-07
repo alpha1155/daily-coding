@@ -1,0 +1,50 @@
+public class Singleton{
+    // 静态内部类
+    public class StaticClass{
+        private StaticClass(){}
+        private static class Holder{
+            private static final StaticClass INSTANCE = new StaticClass();
+        }
+        public static StaticClass getInstance(){
+            return Holder.INSTANCE;
+        }
+    }
+    
+    // 双检锁
+    public class DoubleCheckLock{
+        private DoubleCheckLock(){}
+        private static volatile DoubleCheckLock INSTANCE;
+        public DoubleCheckLock getInstance(){
+            if(INSTANCE==null){
+                Synchronized(DoubleCheckLock.class){
+                    if(INSTANCE==null){
+                        INSTANCE =new DoubleCheckLock();
+                    }
+                }
+            }
+            return INSTANCE;
+        }
+    }
+    // 饿汉式
+    public class HungryClass{
+        private static final HungryClass INSTANCE = new HungryClass();
+        private HungryClass(){}
+        public static HungryClass getInstance(){
+            return INSTANCE;
+        }
+    }
+    // 懒汉式
+    public class LazyClass{
+        private LazyClass(){}
+        private static LazyClass INSTANCE;
+        public static synchronized LazyClass getInstance(){
+            if(INSTANCE==null)
+                INSTANCE=new LazyClass();
+            return INSTANCE;
+        }
+    }
+    // 枚举单例
+    public enum SingleEnumClass {
+        INSTANCE;
+    }
+}

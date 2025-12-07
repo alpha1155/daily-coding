@@ -2,7 +2,7 @@ package Spring;
 
 import java.util.*;
 import java.util.concurrent.locks.*;
-
+//有界阻塞队列
 public class MyBlockingQueue<E> {
     private final Queue<E> queue;
     private final int capacity;
