@@ -6751,7 +6751,23 @@ public class SeckillService {
 
 **漏桶（Leaky Bucket）：** 请求以任意速率进入桶中，但只能以固定的速率流出，实现流量的削峰填谷。
 
+## 8、高并发系统设计
 
+- **秒杀系统**：设计要点包括流量预热、库存缓存（Redis原子操作）、异步下单、超卖防抖（如MQ削峰、随机码防刷）。[cnblogs](https://www.cnblogs.com/crazymakercircle/p/14367907.html)
+- **红包系统**：处理高并发抢红包，使用Redis Lua脚本原子扣减、预生成红包池、防止重复领取。[cnblogs](https://www.cnblogs.com/crazymakercircle/p/14367907.html)
+- **短链接生成**：用Base62编码长链接、支持PV统计、冲突检测（Bloom过滤器或数据库唯一索引）。[cnblogs](https://www.cnblogs.com/crazymakercircle/p/14367907.html)
+
+## 9、分布式组件设计
+
+- **分布式ID生成**：雪花算法（Snowflake）或美团Leaf，考虑时钟回拨和机器ID冲突。[cnblogs](https://www.cnblogs.com/crazymakercircle/p/14367907.html)
+- **分布式限流**：令牌桶/漏桶算法，用Redis实现令牌预充、平滑限流，支持集群共享计数器。[cnblogs](https://www.cnblogs.com/crazymakercircle/p/14367907.html)
+- **分布式定时任务**：基于ZooKeeper选举主节点、任务分片、失败重试机制。[cnblogs](https://www.cnblogs.com/crazymakercircle/p/14367907.html)
+
+## 10、其他常见场景
+
+- **微博推送系统**：粉丝数分层（热/冷数据）、时间轮询+推拉结合、Kafka分区有序消费。[cnblogs](https://www.cnblogs.com/crazymakercircle/p/14367907.html)
+- **外卖订单分配**：Redis原子抢单（LPUSH+RPOP）、地理位置哈希分桶、骑手权重排序。[cnblogs](https://www.cnblogs.com/crazymakercircle/p/14367907.html)
+- **大文件排序**：外部归并排序、分区读写、内存多路归并。
 
 # 算法
 
