@@ -3498,11 +3498,13 @@ public class MyController { }
 
 Spring Boot 通过 Spring 框架的事务管理模块来支持事务操作。事务管理在 Spring Boot 中通常是通过 @Transactional 注解来实现的。事务可能会失效的一些常见情况包括：
 
-1. **未捕获异常**：如果一个事务方法内发生未捕获的异常，并且异常未被处理或传播到事务边界之外，那么事务会失效，所有的数据库操作会回滚。
-2. **非事务异常**：默认情况下，Spring 对非受检异常（RuntimeException 及其子类）进行回滚处理，这意味着当事务方法中抛出这些异常时，事务会回滚。
+1. **未捕获异常**：如果一个事务方法异常被try catch，或传播到事务边界之外，那么事务会失效。
+2. **非事务异常**：默认情况下，Spring 对非受检异常（RuntimeException 及其子类）进行回滚处理，对于 Checked Exception，Spring 默认执行 **COMMIT**。
 3. **事务传播行为设置不当**：如果在多个事务之间传播事务嵌套，且事务传播属性配置不正确，可能导致事务失效，常见是内部方法加了事务但外部没有。
 4. **多数据源的事务管理**：如果在使用多个数据源时，事务管理没有正确配置或者存在多个 @Transactional 注解时，可能会导致事务失效。
-5. **事务方法调用问题**：如果一个事务方法内部调用另一个方法，而这个被调用的方法没有 @Transactional 注解，或者调用方式有问题（如 this 调用），事务可能会失效。
+   1. **跨线程调用**：在一个事务方法中，通过手动创建线程（如 `new Thread()` 或 `CompletableFuture.runAsync()`）去执行数据库操作。
+
+5. **事务方法调用问题**：如果一个事务方法内部调用另一个方法，而这个被调用的方法没有 @Transactional 注解，或者调用方式有问题（如 this 调用），事务可能会失效。**非事务方法**调用了**事务方法**。
 6. **事务在非公开方法失效**：如果 @Transactional 注解标注在私有方法上或者非 public 方法上，事务也会失效。
 
 **最经典、最常被问到的失效场景（必背前 3 条）**：
@@ -7236,19 +7238,19 @@ public class RedissonLockService {
 
 # EMS
 
+1. 为世界 500 强制造、能源、零售客户交付一套完全自研的企业级 SaaS 权益管理与智能决策平台（非直接使用标准产品，而是基于 SAP BTP 扩展能力深度定制），实现许可证、订阅、服务、保修等权益的建模、生命周期自动化管理、下游履约编排以及实时分析决策。核心服务统一部署于 SAP BTP Cloud Foundry 多地区环境，采用 Spring Boot 3 + Spring Cloud微服务架构，配合 Redis 分布式缓存 + RabbitMQ实现异步解耦、事件驱动与最终一致性，结合 SAP HANA Cloud 多租户支撑秒级高并发复杂分析查询，通过 Resilience4j 全套（熔断、重试、限流、舱壁）+ Redis 分布式令牌桶保障系统高可用，通过postman和WDI5构建起覆盖API和UI的E2E测试方案， Feature Toggle 机制实现了灰度发布、A/B 测试和生产环境的动态风险管控，基于 GitHub Actions + Jenkins + Docker + CF CLI 构建全链路 CI/CD 与 Dev/Stage/Prod 多环境自动化部署体系，配合 XSUAA + SaaS Provisioning + Destination/Connectivity Service 实现多租户自动化开通与客户 S/4HANA 安全直连。
 
-为世界 500 强制造、能源、零售客户交付一套完全自研的企业级 SaaS 权益管理与智能决策平台（非直接使用标准产品，而是基于 SAP BTP 扩展能力深度定制），实现许可证、订阅、服务、保修等权益的建模、生命周期自动化管理、下游履约编排以及实时分析决策。核心服务统一部署于 SAP BTP Cloud Foundry 多地区环境，采用 Spring Boot 3 + Spring Cloud微服务架构，配合 Redis 分布式缓存 + RabbitMQ实现异步解耦、事件驱动与最终一致性，结合 SAP HANA Cloud 多租户支撑秒级高并发复杂分析查询，通过 Resilience4j 全套（熔断、重试、限流、舱壁）+ Redis 分布式令牌桶保障系统高可用，通过postman和WDI5构建起覆盖API和UI的E2E测试方案， Feature Toggle 机制实现了灰度发布、A/B 测试和生产环境的动态风险管控，基于 GitHub Actions + Jenkins + Docker + CF CLI 构建全链路 CI/CD 与 Dev/Stage/Prod 多环境自动化部署体系，配合 XSUAA + SaaS Provisioning + Destination/Connectivity Service 实现多租户自动化开通与客户 S/4HANA 安全直连。
+   1. 设计并实现客户可编程的权益批量自动化引擎（Entitlement Process），外部客户仅需一次 HTTP 调用即可驱动查询+批量更新权益；采用同步/异步双模式统一入口：1. 同步模式通过 OpenFeign 直连内部高性能微服务实时返回结果；2. 异步模式结合本地事务+Outbox 表可靠投递至 RabbitMQ，快速返回 202，后端独立process服务消费执行,基于内存的临时状态判断机制确保单次数据库提交内的规则逻辑一致性与高效处理，核心写阶段使用 HANA 全局临时表+单语句原子MERGE + 行级排他锁 + 内置乐观锁实现全量原子提交。
+   2. 核心查询接口 QueryV2 的重构调优工作，在解决随数据量增长带来的性能瓶颈，确保系统支持百万级权益的秒级并发查询。架构优化与代码下推：采用 SQLScript 驱动的动态查询引擎，将复杂查询逻辑从 Spring Boot 应用服务下推至 SAP HANA Cloud (列存) 架构。该引擎采用 APPLY_FILTER 优化动态 WHERE 筛选，并使用 EXECUTE IMMEDIATE 实现 SELECT 字段的运行时投影裁剪，同时集成 分页 能力。通过构建优化的 Calculation Views，利用 HANA 内存计算能力实现并行计算，并使用 Resilience4j（限流、熔断）策略保障接口稳定性。
+   3. 开发测试环境 DB Cleaner 微服务，提供 HTTP API，一键清空与重建环境，动态解析 HANA SYS.REFERENTIAL_CONSTRAINTS 外键依赖，计算拓扑排序并自动依序执行 TRUNCATE / 分区级删除，清理效率提升 80%+；同时基于事务包裹 Clean + Init SQL Script，失败自动回滚，保证 “要么全部成功，要么不改动”，Redis 分布式锁防止并发冲突；
+   4. 基于Spring AI 的LLM-Driven Script Generator），设计并实现“自然语言需求 → 可执行JS脚本”一键生成功能，结合 Prompt Engineering 调用内部Gemini模型；生成脚本统一封装为标准格式，与现有框架无缝集成内置代码格式化、失败自动重试机制，生成成功率稳定 95%+。
 
-设计并实现客户可编程的权益批量自动化引擎（Entitlement Process），外部客户仅需一次 HTTP 调用即可驱动查询+批量更新权益；采用同步/异步双模式统一入口：1. 同步模式通过 OpenFeign 直连内部高性能微服务实时返回结果；2. 异步模式结合本地事务+Outbox 表可靠投递至 RabbitMQ，快速返回 202，后端独立process服务消费执行,基于内存的临时状态判断机制确保单次数据库提交内的规则逻辑一致性与高效处理，核心写阶段使用 HANA 单语句原子 MERGE + 行级排他锁 + 内置乐观锁实现全量原子提交，单 Process 1000 条耗时 <150ms。
-核心查询接口 QueryV2 的重构调优工作，在解决随数据量增长带来的性能瓶颈，确保系统支持百万级权益的秒级并发查询。架构优化与代码下推： 采用 SAP HANA Cloud (列存) 架构，将复杂查询逻辑从 Spring Boot 应用服务下推至数据库层，通过构建优化的 Calculation Views，利用 HANA 内存计算能力实现并行计算，避免昂贵的数据传输。并使用 Resilience4j（限流、熔断）策略保障接口稳定性。
-开发测试环境 DB Cleaner 微服务，提供 HTTP API，一键清空与重建环境，动态解析 HANA SYS.REFERENTIAL_CONSTRAINTS 外键依赖，计算拓扑排序并自动依序执行 TRUNCATE / 分区级删除，清理效率提升 80%+；同时基于事务包裹 Clean + Init SQL Script，失败自动回滚，保证 “要么全部成功，要么不改动”，Redis 分布式锁防止并发冲突；
-基于Spring AI 的LLM-Driven Script Generator），设计并实现“自然语言需求 → 可执行JS脚本”一键生成功能，结合 Prompt Engineering 调用内部Gemini模型；生成脚本统一封装为function executeStep(page, data, utils) 标准格式，与现有框架无缝集成内置代码格式化、失败自动重试机制，生成成功率稳定 93%+。
-基于WDI5的UI 自动化测试平台架构设计、实现和CI/CD流程设计：
+   **基于WDI5的UI 自动化测试平台**架构设计、实现和CI/CD流程设计：
 
-通过WDI5实现与UI5应用交互，结合Chai强大、灵活的断言能力，完美覆盖 Fiori Launchpad + 多租户子域名路由 + SAPUI5 复杂场景；
-“数据层与业务场景完全解耦” 设计：通过 axios 封装独立 DataClient 模块，统一负责所有数据的 创建 / 修改 / 删除 / 查询操作，测试场景仅负责编排流程，彻底实现 “一份数据脚本，多场景复用”；
-封装 axios 实例级拦截器，自动处理 XSUAA JWT 刷新 + csrf-token 动态获取 + 多租户 subdomain 切换 + 请求重试，结合 csv-parse / xlsx / papa-parse 实现 Excel/CSV 批量驱动测试；
-构建GitHub Actions + Jenkins Pipeline 双 CI 引擎自动化流水线，GitHub Actions 实现 PR 检查，Jenkins 每日两次全量回归；集成 Allure到平台中，生成报告，并且自动推送到团队邮箱。
+   1. 通过WDI5实现与UI5应用交互，结合Chai强大、灵活的断言能力，完美覆盖 Fiori Launchpad + 多租户子域名路由 + SAPUI5 复杂场景；
+   2. “数据层与业务场景完全解耦” 设计：通过 axios 封装独立 DataClient 模块，统一负责所有数据的 创建 / 修改 / 删除 / 查询操作，测试场景仅负责编排流程，彻底实现 “一份数据脚本，多场景复用”；
+   3. 封装 axios 实例级拦截器，自动处理 XSUAA JWT 刷新 + csrf-token 动态获取 + 多租户 subdomain 切换 + 请求重试，结合 csv-parse / xlsx / papa-parse 实现 Excel/CSV 批量驱动测试；
+   4. 构建GitHub Actions + Jenkins Pipeline 双 CI 引擎自动化流水线，GitHub Actions 实现 PR 检查，Jenkins 每日两次全量回归；集成 Allure到平台中，生成报告，并且自动推送到团队邮箱。
 
 ## 1.关于操作数据库
 
@@ -7648,6 +7650,234 @@ WHEN MATCHED AND T."VERSION" = S."OLD_VERSION" THEN
 ## 12、动态数据源切换
 
 在EMS项目中，我们采用 **ThreadLocal + AbstractRoutingDataSource + HANA Database-per-Tenant** 实现毫秒级租户数据源动态切换：每个租户独享一个独立的HANA数据库实例（而非共享数据库下的Schema隔离），结合 XSUAA JWT 自动解析 tenantId + HDI Container 共享连接池，做到真正物理隔离 + 零侵入 + 高性能，已稳定支撑全球 380+ 租户并发访问，单租户查询延迟增加 < 3ms。
+
+## 13、如果 RabbitMQ 积压 10 万条消息，你怎么处理？
+
+除了**水平扩展消费者**和**优化线程池配置**外，针对积压的 10 万条消息，还有以下处理策略：
+
+- **批量消费优化：** 检查 RabbitMQ 消费者是否配置了 **预取数（Prefetch Count/QoS）**。适当提高预取数，允许消费者一次从队列拉取多条消息进行批量处理，可以提高吞吐量（需确保 Worker 内存足够）。
+- **紧急分流（降级）：** 如果积压严重且影响实时服务，可以考虑：
+  - 将 **10 万条批量消息**临时转移到**低优先级队列**。
+  - 优先处理实时性要求高的**其他消息**。
+- **性能瓶颈排查：** 积压往往意味着消费者处理慢。需重点检查 **HANA 数据库**的写入或查询性能是否是瓶颈。
+
+## 14、顶级追问：DB 和 RabbitMQ 同时宕机，重启后怎么保证 Outbox 消息一定能发出去？
+
+这是 Outbox Pattern 优于传统“服务调用 DB 提交后发送 MQ”的关键点：
+
+1. **DB 恢复是保障：** 只要 DB 恢复，**已提交**到 Outbox 表中的 10 万条事件记录就**安全无虞**。
+2. **Relay 进程自动接管（核心）**：
+   - Relay 进程（Publisher）与业务进程是**解耦**的独立服务。
+   - Relay 进程重启后，会**从上次成功的状态开始**继续轮询 Outbox 表。
+   - 它会发现所有状态为 **“待发送”** 或 **“发送失败”** 的记录，并**自动重试**投递。
+3. **MQ 持久化：** RabbitMQ 重启并恢复，等待 Relay 进程重新投递的消息。
+
+**轮询（Polling） vs. Binlog 监听：**
+
+- **轮询**：Relay 进程通过**定时 `SELECT`** 语句主动从 Outbox 表拉取未发送消息。这是最常见的实现方式，易于控制，且正是因为 Relay 是**独立且持续运行**的，所以能保证宕机后重启继续工作。
+- **Binlog 监听**：使用 Debezium/Canal 等工具监听 HANA 的事务日志。虽然性能和实时性更高，但实现更复杂。无论采用哪种方式，其核心目的都是**可靠地将 Outbox 表中的状态变更事件，实时或准实时地同步到 RabbitMQ**。在您的项目中，使用**轮询**是最简洁且可靠的选择。
+
+## 15、
+
+------
+
+## 1. 成功率 $95\%+$ 是如何计算的？
+
+$95\%+$ 的成功率是基于 **E2E 自动化测试流程**的评估结果，它衡量的是生成的脚本**能否成功执行并验证业务结果**。
+
+### 计算方法
+
+成功率的计算是基于**预定义的测试集**（Test Set）进行回归测试：
+
+$$\text{成功率} = \frac{\text{LLM 生成并执行成功的脚本数量}}{\text{总测试场景数量} (\text{例如：1000 个})}$$
+
+1. **构建黄金数据集（Golden Dataset）：** 准备一个包含数百甚至数千个真实业务场景（如：创建租户、修改权益、查询报表等）的**自然语言描述**集合。
+2. **脚本生成：** 将每个自然语言描述作为输入，通过 **Gemini/Spring AI 模型**生成对应的 WDI5/JS 自动化脚本。
+3. **自动化执行与验证：** 将生成的脚本投入到实际的 Dev/Test/Stage 环境中执行，并由自动化测试框架（如 **WDI5**）进行验证：
+   - **步骤成功：** 脚本能否成功定位到所有 UI 元素并完成操作。
+   - **业务验证：** 脚本执行后的**最终业务状态**是否与预期一致（例如：创建租户后，数据库中是否有新记录，页面上是否有“创建成功”的提示）。
+4. **统计结果：** 统计通过所有验证的脚本数量，得出最终成功率。
+
+### 失败的 $5\%$ 是什么场景？
+
+失败的 $5\%$ 主要集中在模型的**语义理解错误**和 **UI 细节处理失误**，通常包括：
+
+1. **复杂语义误解（Comprehension Failure）：**
+   - **歧义性描述：** 自然语言描述具有歧义性，例如：“点击最大的按钮”或“删除上周创建的记录”。LLM 无法明确判断用户的意图。
+   - **上下文丢失：** 脚本需要跨多个页面或需要引用上一步操作的动态结果，LLM 在没有完整上下文或工具支持的情况下出错。
+2. **UI 自动化细节错误（WDI5/UI5 Specific）：**
+   - **元素定位失败：** 错误的使用了 UI5 元素的 ID 或属性，导致 WDI5 无法定位到目标组件（例如：使用了错误的 `getRows()` 或 `getCells()` 组合）。
+   - **UI 状态变化：** 页面加载时间、异步操作导致的 UI 元素暂时不可用，模型未能生成正确的**等待（waitFor）**逻辑。
+3. **权限或数据依赖问题：** 模型生成的脚本逻辑上正确，但执行时由于环境数据不满足或权限不足，导致执行失败。
+
+------
+
+## 2. Prompt 里使用了 Function Calling 还是纯文本？
+
+根据您在 `tttt.txt` 文件中提供的代码片段，项目采用了**混合且结构化**的 Prompt 方式：
+
+### A. 使用了结构化 Prompt（System Message + User Message）
+
+项目使用了 Spring AI 的标准 Prompt 结构：
+
+1. **System Message（系统指令）：** 传递了一个详细的 **`SYSTEM_PROMPT`**，定义了模型的角色（“资深的 SAP UI5 WDI5 自动化脚本专家”）以及**输出的约束和规范**（例如：必须使用 `getRows()` 和 `getCells()`、必须有关闭 Dialog 的步骤等）。
+2. **User Message（用户输入）：** 包含了用户提交的**自然语言操作描述**。
+
+### B. **未直接使用 Function Calling，但使用了强约束文本**
+
+在 `tttt.txt` 的代码中，**没有看到明确调用 Gemini 的 Function Calling（工具调用）API**。
+
+但是，通过在 `SYSTEM_PROMPT` 中施加**强烈的文本约束**，模型被引导生成一个**特定的 JSON 或 JS 代码块**，这在效果上类似 Function Calling，但本质上是**基于文本的指令跟随**。
+
+**关键代码片段：**
+
+Java
+
+```
+String userPrompt = """
+        请生成 WDI5 脚本完成以下操作：
+        %s
+        
+        必须严格遵守以下规范：
+        ...
+        - 表格操作必须使用 getRows() + getCells()
+        - 最后必须有关闭 Dialog 或返回上一页的步骤
+        """.formatted(naturalLanguage);
+```
+
+这种做法的目的是**提高输出的可靠性和格式化程度**，弥补纯文本生成代码的随机性。
+
+------
+
+## 3. 如何防止 LLM 生成恶意代码？
+
+防止 LLM 生成恶意代码是一个**运行时安全**问题，需要在**生成端（Prompt）**和**执行端（沙箱）**进行多重防御。
+
+### A. Prompt 端的防御（生成侧）
+
+1. **角色限定与安全约束：**
+   - 在 **System Prompt** 中明确禁止生成任何可能导致数据泄露、服务中断或权限提升的代码。
+   - 严格限制 LLM 只能调用 **WDI5 API 的白名单**，禁止生成 Node.js 文件系统操作（`fs`）、网络请求（`fetch`）等高风险代码。
+2. **输入清洗与验证（Prompt Validation）：**
+   - 在将用户输入发送给 LLM 之前，进行简单的**关键字过滤**，防止用户通过 Prompt 注入明显的恶意指令（Prompt Injection），例如包含“delete all”、“drop table”等敏感词。
+
+### B. 执行端的防御（运行时安全）
+
+#### ① 沙箱隔离（Sandbox Execution）
+
+这是防止恶意代码被执行的**最核心、最有效的机制**。
+
+- **机制：** 生成的 WDI5/JS 脚本**绝不**在生产服务器或敏感环境中直接执行。它们必须在一个**受严格限制的沙箱环境**中运行。
+- **技术实现：** 使用 Node.js 的 **`vm` 模块**或更专业的沙箱化技术（如容器化隔离），限制脚本的**系统调用、网络访问和文件系统操作**。
+- **效果：** 即使 LLM 生成了 `fs.unlinkSync('/etc/passwd')` 这样的恶意代码，沙箱也会捕获并阻止该操作，保护宿主系统。
+
+#### ② 审计与人工审查
+
+1. **代码审计：** 在脚本被投入到 Stage/Prod 环境执行前，可以加入一个**静态代码分析器**，自动检查生成的 JS 脚本中是否包含了任何**黑名单 API** 或**不安全的代码模式**。
+2. **双人控制 (Two-Person Rule)：** 对于涉及**敏感数据或破坏性操作**的脚本（如批量删除），强制要求通过**人工审查**流程，防止自动化工具在无人监督下执行高风险操作。
+
+------
+
+## 追问：如果用户输入“删除所有权益”，模型生成的脚本真删了，你怎么防？
+
+### 1. **防止 LLM 生成恶意脚本 (Prompting & Filtering)**
+
+- **Prompt 约束：** 在 System Prompt 中明确指出：“你只能生成针对**单个或少量**特定 ID 的操作，**严禁生成任何形式的批量或全量删除操作**。”
+
+### 2. **核心防线：沙箱与数据隔离**
+
+- **沙箱执行：** 如前所述，脚本只能在沙箱中运行。即使脚本尝试执行删除操作，它操作的也是**测试或非生产环境**的数据。
+- **数据隔离：** WDI5 脚本执行时使用的数据库用户，应遵循**最小权限原则**，其权限范围应仅限于测试数据，或者**通过租户 ID 严格限定**在测试租户内。
+
+### 3. **审计与恢复机制**
+
+- **操作审计：** 所有的脚本执行，无论成功与否，都必须在 **Log 表**中留下详细的**审计记录**（包括执行时间、执行用户、操作内容）。
+- **数据库软删除：** 核心数据（如权益）不应进行物理删除（`DELETE`），而是使用**软删除（Soft Delete）机制，即通过设置一个 `is_deleted = TRUE` 的标记字段。这为数据恢复**提供了快速通道。
+
+## 16、假设现在要给你们权益系统加一个新功能：支持“权益定时生效/失效”（比如某个许可证2025-12-31 23:59:59失效）。 日活5000万，权益总量10亿条，怎么设计？要求不能影响现有查询性能。
+
+（考察点：是否会想到用时间轮、Redis Sorted Set、延迟队列、HANA分区表等）
+
+## 核心设计：Redis ZSET 时间轮 + 读写分离
+
+我们将流程分为三个层次：**数据模型**、**调度机制**和**数据更新**。
+
+### 1. 数据模型与读路径优化
+
+为了确保 **5000 万日活**的查询性能不受影响，我们必须在**读路径**上解决生效/失效的问题。
+
+#### A. HANA 数据库字段
+
+在权益主表 (`Entitlement_T`) 中增加关键的时间字段：
+
+- `Activation_Date` (生效时间)
+- `Expiration_Date` (失效时间)
+- `Status` (权益状态，例如 `ACTIVE`, `EXPIRED`, `PENDING`)
+
+#### B. 读写路径分离 (Separation)
+
+- **读取逻辑（高性能）：** 客户端在从 Redis 缓存中获取权益数据时，必须在**应用层**或**数据库查询**中强制校验时间的有效性。
+
+  SQL
+
+  ```
+  SELECT * FROM Entitlement_T WHERE ID = ? 
+    AND Current_Timestamp() BETWEEN Activation_Date AND Expiration_Date
+    AND Status = 'ACTIVE'; 
+  ```
+
+  这种方式确保了即使调度系统没有立即将状态更新为 `EXPIRED`，查询结果也会因时间校验而**逻辑失效**，**不影响**现有查询的正确性。
+
+### 2. 定时调度机制：Redis Sorted Set（时间轮）
+
+为了高效处理 10 亿条数据的定时任务，我们使用 **Redis Sorted Set (ZSET)** 来构建一个**分布式时间轮**。
+
+- **ZSET 结构：**
+  - **Key:** `entitlement:schedule:expire` (全局唯一的 Key)。
+  - **Score (排序值):** 权益的 `Expiration_Date` 的 **Unix 时间戳**（精确到秒）。
+  - **Member (值):** `EntitlementID` (权益 ID)。
+- **写入流程：** 每当创建或更新一个定时失效的权益时，通过 **Pipeline** 将其 ID 和失效时间戳**原子性地**写入 ZSET。由于 ZSET 是按 Score 排序的，最早过期的权益总是排在最前面。
+
+### 3. 异步调度与事件驱动 (Process Worker)
+
+部署一个独立的、低延迟的 **Scheduler Service** 专门负责监控这个 ZSET，并将失效事件转化为消息。
+
+1. **扫描触发：** Scheduler Service 使用 **`ZRANGEBYSCORE`** 命令，每隔 $N$ 秒（例如 5 秒）扫描 ZSET：
+
+   ```
+   ZRANGEBYSCORE entitlement:schedule:expire 0 Current_Timestamp_in_Seconds
+   ```
+
+   该命令会**极快地**返回所有 Score **小于等于当前时间戳**的权益 ID 列表，即**所有已过期**的权益。
+
+2. **事件投递：** Scheduler Service 将获取到的批量 `EntitlementID` 打包成一个 **`EntitlementExpiredEvent`** 事件，投递给 **RabbitMQ**。
+
+3. **原子移除：** 投递成功后，使用 **`ZREM`** 命令原子性地将这些 ID 从 ZSET 中移除。
+
+4. **最终更新：** 原有的 **Process Worker** 服务消费该事件。 Worker 启动事务，执行核心任务：
+
+   - **HANA 更新：** 将权益主表中的 `Status` 字段更新为 `EXPIRED`。
+   - **Redis 缓存失效：** 删除或更新 Redis 缓存中的对应 Key。
+
+------
+
+## 4. 应对 10 亿条数据的数据库优化
+
+为了确保 HANA 数据库在高并发查询和后台更新时的性能，**HANA 分区表（Partitioning）**是必须采用的手段。
+
+### HANA 分区策略
+
+面对 10 亿条数据，单一表的查询和维护成本极高。可以采用以下策略：
+
+1. **按租户分区 (Tenant Partitioning)：**
+   - **方法：** 在主表上首先按 **`TenantID`** 进行 **Hash 分区**。这是多租户架构中的标准做法，确保一个租户的查询只访问其自己的数据子集，提高并发性。
+2. **按时间范围分区 (Range Partitioning)：**
+   - **方法：** 结合 **`Expiration_Date`** 字段进行**范围分区**（例如，按年份或季度分区）。
+   - **优势：** 当需要批量更新过期权益时，数据库可以直接定位到包含该时间范围数据的特定分区，避免全表扫描，极大提高批量 `MERGE` 操作的性能。
+
+
+
+
 
 
 
