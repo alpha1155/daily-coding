@@ -7227,10 +7227,17 @@ public class RedissonLockService {
 }
 ```
 
-
-
-
 # EMS
+
+1. 负责可编程权益批量自动化引擎等重点模块的服务端研发工作。
+2. 对相关的软件和模块进行日常支持， Bug 修复， 发布维护等。
+3. 参与软件· 架构和设计的讨论，解决开发过程中遇到的各类技术难题，保证软件开发正常进行。
+4. 从0到1主导WDI5 UI自动化测试平台落地，覆盖多租户Fiori复杂场景，搭建GitHub Actions+Jenkins双CI/CD流水线，实现每日一次全量回归与Allure报告自动分发；
+5. 及时响应处理线上故障。
+
+1. 基于springboot、rabbitMQ实现客户可编程权益批量自动化引擎，支持单次调用批处理，主导核心查询接口QueryV2重构与性能调优；
+2. 从0到1主导WDI5 UI自动化测试平台落地，覆盖多租户Fiori复杂场景，搭建GitHub Actions+Jenkins双CI/CD流水线，实现每日一次全量回归与Allure报告自动分发；
+3. 开发DB Cleaner微服务与基于Spring AI的脚本生成器，提升测试环境就绪效率和用户使用体验。
 
 1. 为世界 500 强制造、能源、零售客户交付一套完全自研的企业级 SaaS 权益管理与智能决策平台（非直接使用标准产品，而是基于 SAP BTP 扩展能力深度定制），实现许可证、订阅、服务、保修等权益的建模、生命周期自动化管理、下游履约编排以及实时分析决策。核心服务统一部署于 SAP BTP Cloud Foundry 多地区环境，采用 Spring Boot 3 + Spring Cloud微服务架构，配合 Redis 分布式缓存 + RabbitMQ实现异步解耦、事件驱动与最终一致性，结合 SAP HANA Cloud 多租户支撑秒级高并发复杂分析查询，通过 Resilience4j 全套（熔断、重试、限流、舱壁）+ Redis 分布式令牌桶保障系统高可用，通过postman和WDI5构建起覆盖API和UI的E2E测试方案， Feature Toggle 机制实现了灰度发布、A/B 测试和生产环境的动态风险管控，基于 GitHub Actions + Jenkins + Docker + CF CLI 构建全链路 CI/CD 与 Dev/Stage/Prod 多环境自动化部署体系，配合 XSUAA + SaaS Provisioning + Destination/Connectivity Service 实现多租户自动化开通与客户 S/4HANA 安全直连。
 
@@ -7245,6 +7252,12 @@ public class RedissonLockService {
    2. “数据层与业务场景完全解耦” 设计：通过 axios 封装独立 DataClient 模块，统一负责所有数据的 创建 / 修改 / 删除 / 查询操作，测试场景仅负责编排流程，彻底实现 “一份数据脚本，多场景复用”；
    3. 封装 axios 实例级拦截器，自动处理 XSUAA JWT 刷新 + csrf-token 动态获取 + 多租户 subdomain 切换 + 请求重试，结合 csv-parse / xlsx / papa-parse 实现 Excel/CSV 批量驱动测试；
    4. 构建GitHub Actions + Jenkins Pipeline 双 CI 引擎自动化流水线，GitHub Actions 实现 PR 检查，Jenkins 每日两次全量回归；集成 Allure到平台中，生成报告，并且自动推送到团队邮箱。
+   
+   IM
+   
+   1. 后端开发与逻辑实现：利用 HANA XS Engine 和 Server-Side JavaScript (XSJS) 开发和维护核心业务逻辑，包括创意提交、评估算法和权限管理模块。使用 SQLScript 编写存储过程和函数，优化数据库操作。
+   2. 负责 SAP HANA 数据库的数据建模，设计高效的表结构和数据视图。
+   3. 与前端团队协作，定义和实现 OData 服务接口，支持 Fiori UI 的数据交互需求。参与集成模块的设计，确保创新数据能通过 API 或 SAP CPI 无缝同步到下游项目管理系统。
 
 ## 1.关于操作数据库
 
