@@ -8764,3 +8764,40 @@ HANA Calculation View + 动态字段投影 + Redis 二级缓存 + （例如产�
   
 ```
 
+参与构建一个运行在 SAP HANA 平台和HANA XS Engine之上的创新管理平台。该平台旨在标准化从创意提交到项目启动的全生命周期流程，利用 HANA 的内存计算能力提供高性能的实时分析和数据检索。
+
+1. 富文本跨站脚本攻击 (XSS) 防御机制
+   针对 SAP Innovation Management 平台中的富文本输入场景，设计并实施了健壮的数据输入清洗与验证机制。在 HANA XS Engine 应用服务层 (使用 Server-Side JavaScript - XSJS) 部署了白名单机制 (Whitelist Mechanism) 驱动的内容过滤引擎。该引擎通过严格的正则表达式匹配和编码，过滤掉用户输入中潜在的恶意 HTML 标签和 JavaScript 脚本，显著提升了系统的整体安全性与数据完整性。
+2. 负责Idea核心查询与状态流转接口的性能调优，利用 HANA Calculation Views 和 XSJS 精确调优idea相关查询，利用 SAP HANA DB 的内存计算和列式存储能力，优化了数据分析与检索性能。通过使用 SQLScript 编写高性能存储过程，并将复杂的聚合与数据处理逻辑封装在 Calculation Views 中，避免了应用服务器上的低效计算，在 XSJS 服务层使用预处理语句 (Prepared Statements) 执行重复的增删改查，使 HANA 能够高效缓存执行计划。
+
+
+
+1. 后端开发与逻辑实现：利用 HANA XS Engine 和 Server-Side JavaScript (XSJS) 开发和维护核心业务逻辑，包括创意提交、评估算法和权限管理模块。使用 SQLScript 编写存储过程和函数，优化数据库操作。
+2. 负责 SAP HANA 数据库的数据建模，设计高效的表结构和数据视图。
+3. 与前端团队协作，定义和实现 OData 服务接口，支持 Fiori UI 的数据交互需求。参与集成模块的设计，确保创新数据能通过 API 或 SAP CPI 无缝同步到下游项目管理系统。
+
+
+
+
+
+
+
+为世界 500 强制造、能源、零售客户交付一套完全自研的企业级 SaaS 权益管理与智能决策平台，实现许可证、订阅、服务、保修等权益的建模、生命周期自动化管理、下游履约编排以及实时分析决策。核心服务统一部署于 SAP BTP Cloud Foundry 多地区环境，采用 Spring Boot 3 + Spring Cloud微服务架构，配合 Redis 分布式缓存 + RabbitMQ实现异步解耦、事件驱动与最终一致性，结合 SAP HANA Cloud 多租户支撑秒级高并发复杂分析查询，通过 Resilience4j 全套（熔断、重试、限流、舱壁）+ Redis 分布式令牌桶保障系统高可用，通过postman和WDI5构建起覆盖API和UI的E2E测试方案， Feature Toggle 机制实现了灰度发布、A/B 测试和生产环境的动态风险管控，基于 GitHub Actions + Jenkins + Docker + CF CLI 构建全链路 CI/CD 与 Dev/Stage/Prod 多环境自动化部署体系，配合 XSUAA + SaaS Provisioning + Destination/Connectivity Service 实现多租户自动化开通与客户 S/4HANA 安全直连。
+
+1. 设计并实现客户可编程的权益批量自动化引擎（Entitlement Process），外部客户仅需一次 HTTP 调用即可驱动查询+批量更新权益；采用同步/异步双模式统一入口：1. 同步模式通过 OpenFeign 直连内部高性能微服务实时返回结果；2. 异步模式结合本地事务+Outbox 表可靠投递至 RabbitMQ，快速返回 202，后端独立process服务消费执行,基于内存的临时状态判断机制确保单次数据库提交内的规则逻辑一致性与高效处理，核心写阶段使用 HANA 全局临时表+单语句原子MERGE + 行级排他锁 + 内置乐观锁实现全量原子提交。
+2. 核心查询接口 QueryV2 的重构调优工作，在解决随数据量增长带来的性能瓶颈，确保系统支持百万级权益的秒级并发查询。架构优化与代码下推：采用 SQLScript 驱动的动态查询引擎，将复杂查询逻辑从 Spring Boot 应用服务下推至 SAP HANA Cloud (列存) 架构。该引擎采用 APPLY_FILTER 优化动态 WHERE 筛选，并使用 EXECUTE IMMEDIATE 实现 SELECT 字段的运行时投影裁剪，同时集成 分页 能力。通过构建优化的 Calculation Views，利用 HANA 内存计算能力实现并行计算，并使用 Resilience4j（限流、熔断）策略保障接口稳定性。
+3. 开发测试环境 DB Cleaner 微服务，提供 HTTP API，一键清空与重建环境，动态解析 HANA SYS.REFERENTIAL_CONSTRAINTS 外键依赖，计算拓扑排序并自动依序执行 TRUNCATE / 分区级删除，清理效率提升 80%+；同时基于事务包裹 Clean + Init SQL Script，失败自动回滚，保证 “要么全部成功，要么不改动”，Redis 分布式锁防止并发冲突；
+4. 基于Spring AI 的LLM-Driven Script Generator），设计并实现“自然语言需求 → 可执行JS脚本”一键生成功能，结合 Prompt Engineering 调用内部Gemini模型；生成脚本统一封装为标准格式，与现有框架无缝集成内置代码格式化、失败自动重试机制，生成成功率稳定 95%+。
+
+**基于WDI5的UI 自动化测试平台**架构设计、实现和CI/CD流程设计：
+
+1. 通过WDI5实现与UI5应用交互，结合Chai强大、灵活的断言能力，完美覆盖 Fiori Launchpad + 多租户子域名路由 + SAPUI5 复杂场景；
+2. “数据层与业务场景完全解耦” 设计：通过 axios 封装独立 DataClient 模块，统一负责所有数据的 创建 / 修改 / 删除 / 查询操作，测试场景仅负责编排流程，彻底实现 “一份数据脚本，多场景复用”；
+3. 封装 axios 实例级拦截器，自动处理 XSUAA JWT 刷新 + csrf-token 动态获取 + 多租户 subdomain 切换 + 请求重试，结合 csv-parse / xlsx / papa-parse 实现 Excel/CSV 批量驱动测试；
+4. 构建GitHub Actions + Jenkins Pipeline 双 CI 引擎自动化流水线，GitHub Actions 实现 PR 检查，Jenkins 每日两次全量回归；集成 Allure到平台中，生成报告，并且自动推送到团队邮箱。
+
+1. 负责可编程权益批量自动化引擎等重点模块的服务端研发工作。
+2. 对相关的软件和模块进行日常支持， Bug 修复， 发布维护等。
+3. 参与软件· 架构和设计的讨论，解决开发过程中遇到的各类技术难题，保证软件开发正常进行。
+4. 从0到1主导WDI5 UI自动化测试平台落地，覆盖多租户Fiori复杂场景，搭建GitHub Actions+Jenkins双CI/CD流水线，实现每日一次全量回归与Allure报告自动分发；
+5. 及时响应处理线上故障。
