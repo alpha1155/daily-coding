@@ -7227,6 +7227,142 @@ public class RedissonLockService {
 }
 ```
 
+## 9.线程
+
+### 9.1继承thread
+
+```
+public class MyThread extends Thread{
+    private String taskName;
+    public MyThread(String name){
+    	this.taskName = name;
+    }
+    @Override
+    public void run(){
+    	System.out.println(tasskName+Thread.currentThread().getName());
+    	try{
+			Thread.sleep(1000);    	
+    	}catch(InterruptedException e){
+    		e.printStackTrace();
+    	}
+    }
+    
+    public static void main(String[] args){
+    	Thread t1 = new MyThread("t1");
+    	Thread t2 = new MyThread("t2");
+    	
+    	thread1.start();
+    	thread2.start();
+    	try{
+    		thread1.join();
+    		thread2.join();
+    	}catch(InterruptedException e){
+    		e.printStackTrace();
+    	}
+    }
+}
+```
+
+### 9.2实现Callable接口
+
+```
+public class MyCallable implements Callable<String>{
+	private String taskName;
+	public MyCallable(String taskName){
+		this.taskName = taskName;
+	}
+	@Override
+	public String Call() throws Exception{
+		System.out.println(tasskName+Thread.currentThread().getName());
+		Thread.sleep(1000);
+		return taskName;
+	}
+	
+	public static void main(String[] args)throws Exception{
+		Callable<String> c1 = new MyCallable("C1");
+		Callable<Integer> c2 = ()->{
+			System.out.println("task2"+Thread.currentThread().getName());
+			return 1;
+		};
+		
+		FutureTask<String> f1 = new FutureTask<>(c1);
+		FutureTask<Integer> f2 = new FutureTask<>(c2);
+		Thread t1 = new Thread(f1);
+		Thread t2 = new Thread(f2)
+		t1.start();
+		String r1 = f1.get();
+		Integer r2 = f2.get();
+		return r1+r2;//阻塞
+	}
+}
+```
+
+### 9.3实现Runnable接口
+
+```
+public class MyRunner implements Runnable{
+	private String taskName;
+	public MyRunner(String taskName){
+		this.taskName = taskName;
+	}
+	@Override
+	public void run(){
+		System.out.println(taskName+Thread.currentThread().getName());
+		try{
+			thread.sleep(1000);
+		}catch(InterruptedException e){
+			e.printStackTrace();
+		}
+	}
+	public static void main(){
+		Runnable r1 = new MyRunner("r1");
+		Runnable r2 = new MyRunner("r2");
+		Thread t1 = new Thread(r1);
+		Thread t2 = new Thread(r2);
+		t1.start();
+		t2.start();
+		
+		try{
+		 t1.join();
+		 t2.join();
+		}catch(InterruptedException e){
+			e.printStackTrace();
+		}
+	}
+}
+```
+
+### 9.4 利用Lamada表达式
+
+```
+Runnable r1 = ()->{
+	System.out.println("Task1"+Thread.currentThread().getName());
+	try{
+		Thread.sleep(1000);
+	}catch(InterruptedException e){
+		e.printStackTrace();
+	}
+}
+
+Thread t1  = new Thread(r1);
+t1.start();
+try{
+	t1.join();
+}catch(InterruptedException e){
+	e.printStackTrace();
+}
+```
+
+### 9.5 线程池
+
+#### a>ThreadPoolExecutor
+
+
+
+#### b>Executors
+
+
+
 # EMS
 
 1. 负责可编程权益批量自动化引擎等重点模块的服务端研发工作。
