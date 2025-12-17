@@ -7052,7 +7052,7 @@ public class SyncCounter{
 		count++;
 	}
 	public synchronized int get(){
-	return count;
+		return count;
 	}
 	
 }
@@ -7360,6 +7360,63 @@ try{
 
 
 #### b>Executors
+
+
+
+## 10、equals hashCode
+
+
+
+    @Entity
+    @Getter @Setter
+    public class User {
+        private Long id;
+        private String username;
+        private String email;
+        // 推荐：只基于业务主键（通常是 id）
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;  // 关键！防止子类问题
+            User user = (User) o;
+            return Objects.equals(id, user.id);
+        }
+    
+        @Override
+        public int hashCode() {
+            return Objects.hash(getClass(), id) //更严谨
+        }
+    }
+## 11、拷贝
+
+```
+Person p1 = new Person("张三", 18, new Address("北京"));
+
+// 1. 手动拷贝（推荐）
+Person p2 = new Person(p1.getName(), p1.getAge(), new Address(p1.getAddress().getCity()));
+
+// 2. clone 浅拷贝
+Person p3 = (Person) p1.clone();
+
+// 3. 拷贝构造器（最优雅）
+Person p4 = new Person(p1);  // 自己写一个构造器 Person(Person other)
+
+// 4. 序列化深拷贝（最彻底）
+Person p5 = SerializeUtils.deepClone(p1);  // 工具类封装
+
+// 5. JSON 深拷贝（生产最常用）
+Person p6 = gson.fromJson(gson.toJson(p1), Person.class);
+
+// 6. BeanUtils 浅拷贝（慎用）
+BeanUtils.copyProperties(p1, new Person());
+
+// 7. Spring BeanUtils
+org.springframework.beans.BeanUtils.copyProperties(p1, new Person());
+
+// 8. 第三方工具
+Person p8 = DeepCopy.utils.deepCopyByGson(p1);
+
+```
 
 
 

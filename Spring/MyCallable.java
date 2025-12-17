@@ -89,6 +89,7 @@ public class MyCallable implements Callable<String> {
             }
         } catch (InterruptedException e) {
             executor1.shutdownNow();
+            Thread.currentThread().interrupt();
         }
         System.out.println("主线程结束");
 
