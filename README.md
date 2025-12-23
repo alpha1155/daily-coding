@@ -9198,3 +9198,181 @@ HANA Calculation View + 动态字段投影 + Redis 二级缓存 + （例如产�
    2. 参与软件· 架构和设计的讨论，解决开发过程中遇到的各类技术难题，保证软件开发正常进行。
    3. 从0到1主导WDI5 UI自动化测试平台落地，覆盖多租户Fiori复杂场景，搭建GitHub Actions+Jenkins双CI/CD流水线，实现每日一次全量回归与Allure报告自动分发；
    4. 及时响应处理线上故障。
+
+
+
+
+
+##  项目技术栈
+
+### 后端框架
+
+- FastAPI：Web 框架，提供 REST API
+
+- Uvicorn：ASGI 服务器，运行 FastAPI 应用
+
+- Python-multipart：处理文件上传
+
+### AI/ML 库
+
+- LangChain：LLM 调用框架
+
+- langchain-openai：OpenAI 集成
+
+- langchain-community：社区扩展（包含 DashScope 等）
+
+- FewShotPromptTemplate：Few-Shot 学习
+
+- PromptTemplate：提示词模板
+
+- OpenAI：OpenAI API 客户端
+
+- FAISS：向量数据库（用于 RAG 相似度检索）
+
+### 数据处理
+
+- Pydantic：数据验证和模型定义
+
+- BaseModel：定义 API 请求/响应模型
+
+- Field：字段验证
+
+- JSON：处理 JSON 数据
+
+- Pickle：序列化向量数据库元数据
+
+### 向量检索（RAG）
+
+- FAISS：向量相似度搜索
+
+- OpenAI Embeddings：生成文本向量
+
+- DashScope Embeddings：阿里云千问的 Embeddings（可选）
+
+### 文件处理
+
+- Pathlib：路径操作
+
+- Shutil：文件操作（复制、移动等）
+
+- Re：正则表达式（解析 Markdown）
+
+### 环境配置
+
+- Python-dotenv：加载环境变量（.env 文件）
+
+### 标准库
+
+- os：操作系统接口（环境变量、文件操作）
+
+- json：JSON 处理
+
+- re：正则表达式
+
+- enum：枚举类型（LLMProvider, VectorGranularity）
+
+- typing：类型提示
+
+- pickle：对象序列化
+
+### 前端技术（static/index.html）
+
+- HTML5：页面结构
+
+- JavaScript：前端逻辑
+
+- Tailwind CSS：样式框架
+
+- Lucide Icons：图标库
+
+- Highlight.js：代码高亮（用于 JSON 显示）
+
+## 核心技术特性
+
+### 1. Few-Shot Learning
+
+- 使用 LangChain 的 FewShotPromptTemplate
+
+- 通过示例模板让 LLM 学习转换模式
+
+### 2. RAG（检索增强生成）
+
+- FAISS 向量数据库存储模板向量
+
+- OpenAI/DashScope Embeddings 生成向量
+
+- 语义相似度匹配模板
+
+### 3. 细粒度向量划分
+
+- Template 级别：整个模板一个向量
+
+- Scenario 级别：每个 scenario 一个向量（默认）
+
+- Step 级别：每个 step 一个向量
+
+### 4. 分块生成
+
+- 支持长内容分块处理
+
+- 避免 token 限制问题
+
+## 依赖关系图
+
+FastAPI (Web框架)
+
+├── Uvicorn (ASGI服务器)
+
+├── Pydantic (数据验证)
+
+└── Python-multipart (文件上传)
+
+LangChain (AI框架)
+
+├── langchain-openai (OpenAI集成)
+
+├── langchain-community (扩展功能)
+
+└── OpenAI API (LLM调用)
+
+RAG系统
+
+├── FAISS (向量数据库)
+
+├── OpenAI Embeddings (向量生成)
+
+└── DashScope Embeddings (可选)
+
+数据处理
+
+├── JSON (数据格式)
+
+├── Pickle (序列化)
+
+└── Re (正则表达式)
+
+## 主要功能模块
+
+1. converter.py：核心转换逻辑（Few-Shot Learning）
+
+1. rag_module.py：RAG 向量检索
+
+1. chunked_generator.py：分块生成
+
+1. main.py：FastAPI 后端服务
+
+1. static/index.html：前端界面
+
+## 总结
+
+项目是一个 AI 驱动的测试工具，结合了：
+
+- FastAPI（Web 服务）
+
+- LangChain（AI 框架）
+
+- FAISS（向量检索）
+
+- Few-Shot Learning（少样本学习）
+
+- RAG（检索增强生成）
