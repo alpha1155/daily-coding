@@ -8392,10 +8392,10 @@ AI Test Case Converter 是一个 AI 驱动的自动化测试工具，将 Markdow
   4. 生成 Postman Collection 的接口
   5. 静态文件服务（前端页面）
   6. 主要 API：
-    1. POST /upload-template - 上传模板
-    2. GET /templates - 获取模板列表
-    3. POST /generate - 生成 Postman Collection
-    4. POST /generate-from-text - 从文本直接生成
+        1. POST /upload-template - 上传模板
+            2. GET /templates - 获取模板列表
+                3. POST /generate - 生成 Postman Collection
+                    4. POST /generate-from-text - 从文本直接生成
 
 2. converter.py - 核心转换引擎
 
@@ -8404,9 +8404,9 @@ AI Test Case Converter 是一个 AI 驱动的自动化测试工具，将 Markdow
   3. LLM 调用：支持 OpenAI 和阿里千问（Qwen）
   4. JSON 验证与修复：确保生成有效 JSON
   5. 关键函数：
-    1. parse_markdown_test_case() - 解析 Markdown
-    2. generate_postman_collection() - 调用 LLM 生成 JSON
-    3. validate_and_fix_json() - 验证和修复 JSON
+        1. parse_markdown_test_case() - 解析 Markdown
+            2. generate_postman_collection() - 调用 LLM 生成 JSON
+                3. validate_and_fix_json() - 验证和修复 JSON
 
 3. rag_module.py - RAG 智能匹配模块
 
@@ -8417,8 +8417,8 @@ AI Test Case Converter 是一个 AI 驱动的自动化测试工具，将 Markdow
   5. Scenario 级别：每个 scenario 一个向量（默认推荐）
   6. Step 级别：每个 step 一个向量（最细粒度）
   7. 核心类：
-    1. TemplateRAG - RAG 系统主类
-    2. find_best_template_with_rag() - 查找最佳匹配
+        1. TemplateRAG - RAG 系统主类
+            2. find_best_template_with_rag() - 查找最佳匹配
 
 4. chunked_generator.py - 分块生成模块
 
@@ -8426,9 +8426,9 @@ AI Test Case Converter 是一个 AI 驱动的自动化测试工具，将 Markdow
   2. 分步生成：每个块独立生成
   3. 结果合并：合并所有块的结果
   4. 解决的问题：
-    1. 避免超过 LLM token 限制
-    2. 提高长内容的生成质量
-    3. 减少超时风险
+        1. 避免超过 LLM token 限制
+            2. 提高长内容的生成质量
+                3. 减少超时风险
 
 5. start.py - 启动脚本
 
@@ -8438,7 +8438,7 @@ AI Test Case Converter 是一个 AI 驱动的自动化测试工具，将 Markdow
 
   3. 工作流程
 
-    1. ```
+        1. ```
       1. 用户上传新的Markdown测试用例
          ↓
       2. RAG智能匹配模板/Scenario/Step
@@ -8467,14 +8467,15 @@ AI Test Case Converter 是一个 AI 驱动的自动化测试工具，将 Markdow
   4. 多 LLM 支持：OpenAI GPT 和阿里千问
   5. 细粒度匹配：支持 Template/Scenario/Step 三种粒度
   6. 使用场景
-    1. 将 Markdown 测试用例转换为 Postman Collection
-    2. 自动化 API 测试用例生成
-    3. 测试用例格式标准化
+        1. 将 Markdown 测试用例转换为 Postman Collection
+            2. 自动化 API 测试用例生成
+                3. 测试用例格式标准化
 
 7. 关键配置
 
   1. 模板存储：templates/ 目录（需要成对的 .md 和 .json 文件）
   2. 向量数据库：vector_store/ 目录（自动创建）
+
     环境变量：
     OPENAI_API_KEY - OpenAI API 密钥
     DASHSCOPE_API_KEY - 阿里千问 API 密钥
@@ -9039,12 +9040,28 @@ script: 脚本对象
 
 ### 使用的关键技术栈
 
+Gemini 2.0 Flash
+
 - **LangChain**：Prompt 管理、embedding 封装、LLM 调用
 - **FAISS**：向量存储与检索
-- **OpenAI / DashScope Embeddings**：向量生成
+- **OpenAI Embeddings**：向量生成
+  - 嵌入模型
+    - gemini-embedding-001
+    - text-embedding-004
+
 - **Pydantic**：数据校验（模板结构）
 
+## 23、大模型
 
+**OpenAI (Azure OpenAI)**：包括 **GPT-4o**、**GPT-4 Turbo**、**GPT-3.5 Turbo**，以及最新的 **o1**、**o3** 等模型。这是 SAP 目前最核心的合作伙伴。
+
+**Google Cloud**：包括 **Gemini 1.5 Pro**、**Gemini 1.5 Flash** 和 **PaLM 2**。
+
+**Anthropic**：提供 **Claude 3.5 Sonnet**、**Claude 3 Opus** 等。
+
+**Mistral AI**：包括 **Mistral Large 2** 和 **Codestral**（专门用于代码生成）。
+
+**Meta**：支持 **Llama 3.1 / 3.2** 等开源系列。
 
 
 
@@ -9735,259 +9752,6 @@ try {
    - **局限性**：正则可能漏复杂嵌套（如 `<iframe>` 内嵌），建议结合 SAP UI5 的客户端验证（）。现代项目迁移到 CAP/Node.js 时，可用 `xss` 库增强（）。
    - **SAP 推荐**：官方文档（、）强调白名单 + 编码组合，避免纯黑名单。社区（如 Medium ）建议在 XSJS 中集成安全最佳实践。
 
-这种实现简单、高效，适合 SAP Innovation Management 的富文本场景。如果需要更高级的（如 DOM-based），可迁移到 XS Advanced 的 Node.js 模块（）。如果有具体代码或项目细节，我可以进一步优化示例！
-
-------
-
-1. 主导/深度参与多租户核心框架落地（Schema-per-Tenant + 动态数据源 + Tenant Context 传递）
-2. 负责 XSUAA + JWT 全链路透传与授权体系设计（含 scope、attributes、自定义授权）
-3. 主导 SaaS Provisioning Service 订阅回调自动化开通流程，实现 5 分钟内新租户全栈可用
-4. 设计并落地基于 Outbox Pattern + RabbitMQ 可靠事件的分布式事务方案，保障核心链路最终一致性
-5. 主导从 Ribbon/Hystrix 向 Spring Cloud LoadBalancer + Resilience4j 的全系统治理升级
-6. 负责高频核心接口（Query V2 / Update V2）性能重构，RT 从秒级压到百毫秒级，支撑日千万调用
-7. 设计并实现 Destination + Connectivity Service 调用客户 S/4HANA 的安全直连方案
-8. 主导测试环境 DB Cleaner / Data Setup 微服务开发，支撑自动化回归零数据污染
-9. 从 0 到 1 搭建企业级 WDI5 + OPA5 UI 自动化平台，日均执行 800+ 用例，覆盖率 78%
-10. 基于 Spring AI + 内部大模型实现自然语言 → WDI5 可执行脚本一键生成，生成成功率 93%+
-11. 负责 Redis Cluster 分布式限流、分布式锁、热点缓存体系落地，峰值期数据库压力下降 70%
-12. 参与 RabbitMQ → Event Mesh（Kafka）平滑双写与流量切换，完成 60%+ 新流量迁移
-13. 负责 Dynatrace + OpenTelemetry + Cloud Logging 可观测性体系建设，实现毫秒级全链路追踪
-14. 主导 HANA Cloud Calculation View / CDS 重构，复杂分析查询性能提升 5~10 倍
-15. 设计租户级 Blue-Green 零停机发布流程，配合 CF Route + manifest.yml 实现分钟级切换
-16. 负责日常生产问题排查、性能瓶颈定位、应急响应（多次主导月末高峰期系统稳定）
-
-
-
-```
-spring:
-  ai:
-    vertex:
-      ai:
-        gemini:
-          project-id: your-gcp-project-id
-          location: us-central1
-          chat:
-            options:
-              model: gemini-2.0-flash-exp-03-25    # 2025 年企业最常用实验版 Flash
-              temperature: 0.2
-              top-p: 0.95
-              max-output-tokens: 2048
-              response-mime-type: application/json   # 强制 JSON 结构化输出
-```
-
-
-
-    @Service
-    @RequiredArgsConstructor
-    public class Wdi5ScriptGeneratorService {
-    private final ChatClient chatClient;  // Spring AI 自动注入，已绑定 Gemini
-    
-    private static final String SYSTEM_PROMPT = """
-        你是一个资深的 SAP UI5 WDI5 自动化脚本专家。
-        你必须严格按照以下格式输出可执行的 JavaScript 函数，不能多一句话，不能有 markdown 代码块。
-        必须使用标准的 executeStep(page, data, utils) 格式。
-        使用 utils.waitForUI5() 做全局等待，使用 utils.log() 打日志。
-        所有控件定位必须使用 WDI5 推荐的 controlType + properties 方式。
-        失败必须 throw new Error()。
-        输出必须是纯函数代码，可直接被 Function.parse() 执行。
-        """;
-    
-    public String generateScript(String naturalLanguage) {
-        String userPrompt = """
-            请生成 WDI5 脚本完成以下操作：
-            %s
-            
-            要求：
-            - 支持多租户子域名自动识别
-            - 所有输入框使用 SmartField 或 Input + binding
-            - 表格操作必须使用 getRows() + getCells()
-            - 最后必须有关闭 Dialog 或返回上一页的步骤
-            """.formatted(naturalLanguage);
-    
-        Prompt prompt = new Prompt(
-            List.of(
-                new SystemMessage(SYSTEM_PROMPT),
-                new UserMessage(userPrompt)
-            ),
-            GeminiChatOptions.builder()
-                .withTemperature(0.2)
-                .build()
-        );
-    
-        return chatClient.call(prompt)
-                .getResult()
-                .getOutput()
-                .getContent()
-                .trim();
-    }
-    }
-    {
-      "contents": [
-        {
-          "role": "model",
-          "parts": [{ "text": "你是一个资深的 SAP UI5 WDI5 自动化脚本专家...\n" }]
-        },
-        {
-          "role": "user",
-          "parts": [{ "text": "请生成 WDI5 脚本完成以下操作：\n在租户管理页面创建一个新租户，填入名称 'Test-Tenant-2025'，选择 Standard 版本，点击 Save 并验证成功弹窗出现。" }]
-        }
-      ],
-      "generationConfig": {
-        "temperature": 0.2,
-        "maxOutputTokens": 2048,
-        "responseMimeType": "application/json"
-      }
-    }
-HANA Calculation View + 动态字段投影 + Redis 二级缓存 + （例如产品配置信息、客户主数据、短期内频繁查询的活跃权益状态），引入 Redis 作为二级缓存。
-
-```json
-{
-    "tenantId": "alpha-test",
-    "connectionUrl": "jdbc:sap://xxx.hana.cloud:443",
-    "schema": "ALPHA",
-    "credentialsId": "cleaner-automation"
-}
-```
-
-
-
-1. **一级缓存（应用内缓存）：** 使用 Spring Boot 应用内存中的本地缓存（例如 Guava 或 Caffeine）来存储最近访问的流程配置。这是最快的访问方式。
-2. **二级缓存（Redis 分布式缓存）：** 使用 Redis 作为共享缓存。当不同的微服务实例需要访问配置时，它们可以从 Redis 中快速获取。
-3. **主动失效机制：** 当客户更新流程配置时，您的配置管理服务应主动通知相关的微服务或向 Redis 发送失效命令，以确保下一个请求能加载到最新规则。
-
-以下是一个适合「Java后端开发3年经验」岗位投递的**专业技能列表**（技术栈主流、全面、含深度，适合投大厂或中大厂），你可以直接抄或者根据实际情况微调：
-
-**专业技能**
-
-- 熟练使用 Java 核心技术，精通 Java 8+ 特性（Stream、Lambda、Optional、CompletableFuture、LocalDateTime 等）
-- 深入理解并长期使用 Spring 全家桶：
-  - Spring Boot（2.x/3.x）、Spring MVC、Spring Data JPA、Spring Security、Spring Cloud
-  - Spring Cloud Alibaba（Nacos、Sentinel、Seata、RocketMQ）
-- 熟练使用微服务架构，具备完整微服务项目从0到1开发经验
-- 熟练使用常见中间件：
-  - Redis（主从、哨兵、Cluster、分布式锁、Pipeline、Lua 脚本、缓存穿透/雪崩解决方案）
-  - MySQL（索引优化、分库分表、慢查询分析、事务隔离级别、MVCC）
-  - RabbitMQ / RocketMQ / Kafka（高性能消息队列、延迟队列、幂等消费、顺序消息、死信队列）
-  - Elasticsearch（倒排索引、DSL 查询、聚合分析、亿级数据检索优化）
-- 熟练使用 MyBatis / MyBatis-Plus，熟悉动态 SQL、插件机制、多数据源切换
-- 熟悉 JVM 调优（内存结构、GC 算法、常见 GC 调优参数、 Arthas、异步日志）
-- 熟悉常见设计模式及重构，具备大型系统设计与优化经验
-- 熟练使用 Docker + Kubernetes 完成容器化部署与服务编排
-- 熟练使用 Git、Maven/Gradle、Jenkins/GitLab CI 进行版本控制与持续集成
-- 熟悉 Linux 常见命令，具备问题排查与性能调优经验（top、free、vmstat、sar、strace、tcpdump）
-- 熟悉分布式系统常见问题与解决方案：
-  - 分布式锁、分布式事务（Seata AT/TCC/XA、RocketMQ 事务消息）
-  - 限流熔断降级（Sentinel、Resilience4j）
-  - 接口幂等、最终一致性、CAP 理论
-- 熟悉高并发场景优化（线程池调优、连接池调优、异步化、批量操作、热点缓存）
-- 了解常见 NoSQL（MongoDB、ClickHouse、TiDB）与 NewSQL 应用场景
-- 了解前后端分离开发，熟悉 RESTful API 设计规范与 OpenAPI/Swagger 文档生成
-- 具备良好的代码规范与代码审查能力，熟悉 SonarQube、阿里巴巴 Java 开发手册
-
-**加分项（有最好写上，没有也别硬写）**
-- 熟悉 Go/Python 等后端语言，有混合技术栈项目经验
-- 参与过亿级 PV/日活百万+项目的架构设计与优化
-- 有开源项目贡献或个人技术博客
-- 熟悉大数据生态（Flink、Spark、Hadoop）
-- 熟悉云原生技术（Istio Service Mesh、Serverless、GraalVM）
-
-
-
-
-
-```
-你现在是 **阿里 P8 / 字节跳动高级 Java 面试官 + 耐心导师**，拥有 10 年大厂面试经验。
-请用 **清晰、结构化、带陷阱分析** 的方式，逐题讲解以下 Java 面试题。
-**输出格式严格遵循（每题独立分隔）**：
-第 X 题：{题目原题}
-考察点：{核心知识点，多个用逗号分隔}在讲解一下对应概念
-标准答案（面试 回答）：
-[一句话总结]
-深度剖析（带陷阱/踩坑点）：
-
-1. [原理/源码级解释]
-2. [常见错误写法 + 反例]
-3. [面试官追问方向]
-   代码示例（生产级，可直接运行）：
-   java
-   // 代码
-   追问变种（面试官常问）：
-
-* [变种1]
-* [变种2]
-  记忆口诀（便于背诵）：
-  [一句顺口溜或口诀]
-  text
-  **现在开始讲解以下题目**（一次最多 3 题，题目用 ``` 分隔）：
-  
-```
-
-参与构建一个运行在 SAP HANA 平台和HANA XS Engine之上的创新管理平台。该平台旨在标准化从创意提交到项目启动的全生命周期流程，利用 HANA 的内存计算能力提供高性能的实时分析和数据检索。
-
-1. 富文本跨站脚本攻击 (XSS) 防御机制
-   针对 SAP Innovation Management 平台中的富文本输入场景，设计并实施了健壮的数据输入清洗与验证机制。在 HANA XS Engine 应用服务层 (使用 Server-Side JavaScript - XSJS) 部署了白名单机制 (Whitelist Mechanism) 驱动的内容过滤引擎。该引擎通过严格的正则表达式匹配和编码，过滤掉用户输入中潜在的恶意 HTML 标签和 JavaScript 脚本，显著提升了系统的整体安全性与数据完整性。
-2. 负责Idea核心查询与状态流转接口的性能调优，利用 HANA Calculation Views 和 XSJS 精确调优idea相关查询，利用 SAP HANA DB 的内存计算和列式存储能力，优化了数据分析与检索性能。通过使用 SQLScript 编写高性能存储过程，并将复杂的聚合与数据处理逻辑封装在 Calculation Views 中，避免了应用服务器上的低效计算，在 XSJS 服务层使用预处理语句 (Prepared Statements) 执行重复的增删改查，使 HANA 能够高效缓存执行计划。
-
-
-
-1. 后端开发与逻辑实现：利用 HANA XS Engine 和 Server-Side JavaScript (XSJS) 开发和维护核心业务逻辑，包括创意提交、评估算法和权限管理模块。使用 SQLScript 编写存储过程和函数，优化数据库操作。
-2. 负责 SAP HANA 数据库的数据建模，设计高效的表结构和数据视图。
-3. 与前端团队协作，定义和实现 OData 服务接口，支持 Fiori UI 的数据交互需求。参与集成模块的设计，确保创新数据能通过 API 或 SAP CPI 无缝同步到下游项目管理系统。
-
-
-
-1. 负责可编程权益批量自动化引擎等重点模块的服务端研发工作。
-2. 对相关的软件和模块进行日常支持， Bug 修复， 发布维护等。
-3. 参与软件· 架构和设计的讨论，解决开发过程中遇到的各类技术难题，保证软件开发正常进行。
-4. 负责AI相关的research和集成开发；
-5. 从0到1主导WDI5 UI自动化测试平台落地，覆盖多租户Fiori复杂场景，搭建GitHub Actions+Jenkins双CI/CD流水线，实现每日一次全量回归与Allure报告自动分发；
-6. 及时响应处理线上故障。
-
-1. # SAP Innovation Management (SAP IM) 平台开发与实施
-
-   **项目名称：** 企业级创新管理平台 (SAP Innovation Management) 实施项目
-
-   参与构建一个运行在 SAP HANA 平台和HANA XS Engine之上的创新管理平台。该平台旨在标准化从创意提交到项目启动的全生命周期流程，利用 HANA 的内存计算能力提供高性能的实时分析和数据检索。
-
-   1. 富文本跨站脚本攻击 (XSS) 防御机制
-      针对 SAP Innovation Management 平台中的富文本输入场景，设计并实施了健壮的数据输入清洗与验证机制。在 HANA XS Engine 应用服务层 (使用 Server-Side JavaScript - XSJS) 部署了白名单机制 (Whitelist Mechanism) 驱动的内容过滤引擎。该引擎通过严格的正则表达式匹配和编码，过滤掉用户输入中潜在的恶意 HTML 标签和 JavaScript 脚本，显著提升了系统的整体安全性与数据完整性。
-   2. 负责Idea核心查询与状态流转接口的性能调优，利用 HANA Calculation Views 和 XSJS 精确调优idea相关查询，利用 SAP HANA DB 的内存计算和列式存储能力，优化了数据分析与检索性能。通过使用 SQLScript 编写高性能存储过程，并将复杂的聚合与数据处理逻辑封装在 Calculation Views 中，避免了应用服务器上的低效计算，在 XSJS 服务层使用预处理语句 (Prepared Statements) 执行重复的增删改查，使 HANA 能够高效缓存执行计划。
-
-   
-
-   
-
-   
-
-   为世界 500 强制造、能源、零售客户交付一套完全自研的企业级 SaaS 权益管理与智能决策平台，实现许可证、订阅、服务、保修等权益的建模、生命周期自动化管理、下游履约编排以及实时分析决策。核心服务统一部署于 SAP BTP Cloud Foundry 多地区环境，采用 Spring Boot 3 + Spring Cloud微服务架构，配合 Redis 分布式缓存 + RabbitMQ实现异步解耦、事件驱动与最终一致性，结合 SAP HANA Cloud 多租户支撑秒级高并发复杂分析查询，通过 Resilience4j 全套（熔断、重试、限流、舱壁）+ Redis 分布式令牌桶保障系统高可用，通过postman和WDI5构建起覆盖API和UI的E2E测试方案， Feature Toggle 机制实现了灰度发布、A/B 测试和生产环境的动态风险管控，基于 GitHub Actions + Jenkins + Docker + CF CLI 构建全链路 CI/CD 与 Dev/Stage/Prod 多环境自动化部署体系，配合 XSUAA + SaaS Provisioning + Destination/Connectivity Service 实现多租户自动化开通与客户 S/4HANA 安全直连。
-
-   1. 设计并实现客户可编程的权益批量自动化引擎（Entitlement Process），外部客户仅需一次 HTTP 调用即可驱动查询+批量更新权益；采用同步/异步双模式统一入口：1. 同步模式通过 OpenFeign 直连内部高性能微服务实时返回结果；2. 异步模式结合本地事务+Outbox 表可靠投递至 RabbitMQ，快速返回 202，后端独立process服务消费执行,基于内存的临时状态判断机制确保单次数据库提交内的规则逻辑一致性与高效处理，核心写阶段使用 HANA 全局临时表+单语句原子MERGE + 行级排他锁 + 内置乐观锁实现全量原子提交。
-   2. 核心查询接口 QueryV2 的重构调优工作，在解决随数据量增长带来的性能瓶颈，确保系统支持百万级权益的秒级并发查询。架构优化与代码下推：采用 SQLScript 驱动的动态查询引擎，将复杂查询逻辑从 Spring Boot 应用服务下推至 SAP HANA Cloud (列存) 架构。该引擎采用 APPLY_FILTER 优化动态 WHERE 筛选，并使用 EXECUTE IMMEDIATE 实现 SELECT 字段的运行时投影裁剪，同时集成 分页 能力。通过构建优化的 Calculation Views，利用 HANA 内存计算能力实现并行计算，并使用 Resilience4j（限流、熔断）策略保障接口稳定性。
-   3. 开发测试环境 DB Cleaner 微服务，提供 HTTP API，一键清空与重建环境，动态解析 HANA SYS.REFERENTIAL_CONSTRAINTS 外键依赖，计算拓扑排序并自动依序执行 TRUNCATE / 分区级删除，清理效率提升；同时基于事务包裹 Init SQL Script，失败自动回滚，保证 “要么全部成功，要么不改动”，Redis 分布式锁防止并发冲突；
-   4. 基于Spring AI 的LLM-Driven Script Generator），设计并实现“自然语言需求 → 可执行JS脚本”一键生成功能，结合 Prompt Engineering 调用内部Gemini模型；生成脚本统一封装为标准格式，与现有框架无缝集成内置代码格式化、失败自动重试机制，生成成功率稳定 95%+。
-   5. 基于RAG的postman脚本生成工具，将Markdown E2E测试用例自动转换为Postman Collection JSON，基于FAISS向量数据库和嵌入模型，实现语义模板匹配，集成 LangChain + LLM，实现Markdown解析、模板管理与分块生成。
-   
-   **基于WDI5的UI 自动化测试平台**架构设计、实现和CI/CD流程设计：
-   
-   1. 通过WDI5实现与UI5应用交互，结合Chai强大、灵活的断言能力，完美覆盖 Fiori Launchpad + 多租户子域名路由 + SAPUI5 复杂场景；
-   2. “数据层与业务场景完全解耦” 设计：通过 axios 封装独立 DataClient 模块，统一负责所有数据的 创建 / 修改 / 删除 / 查询操作，测试场景仅负责编排流程，彻底实现 “一份数据脚本，多场景复用”；
-   3. 封装 axios 实例级拦截器，自动处理 XSUAA JWT 刷新 + csrf-token 动态获取 + 多租户 subdomain 切换 + 请求重试，结合 csv-parse / xlsx / papa-parse 实现 Excel/CSV 批量驱动测试；
-   4. 构建GitHub Actions + Jenkins Pipeline 双 CI 引擎自动化流水线，GitHub Actions 实现 PR 检查，Jenkins 每日两次全量回归；集成 Allure到平台中，生成报告，并且自动推送到团队邮箱。
-   
-   
-   
-   1. 负责可编程权益批量自动化引擎等重点模块的服务端研发工作。
-   2. 对相关的软件和模块进行日常支持， Bug 修复， 发布维护等。
-   3. 参与软件· 架构和设计的讨论，解决开发过程中遇到的各类技术难题，保证软件开发正常进行。
-   4. 从0到1主导WDI5 UI自动化测试平台落地，覆盖多租户Fiori复杂场景，搭建GitHub Actions+Jenkins双CI/CD流水线，实现每日一次全量回归与Allure报告自动分发；
-   5. 及时响应处理线上故障。
-   
-   我是23年6月电子科技大学软件工程专业本科毕业，其中在大三下学期开始在思爱普成都研究院Innovation Management项目组实习，这个项目是提供标准化的从创意提交到项目启动的全生命周期流程，参与日常开发和一些support工作，会处理线上故障，一个运行在 SAP HANA 平台和HANA XS Engine之上的创新管理项目，毕业之后转到entitlement management system的项目组，项目是一套自研的SaaS 权益管理与智能决策平台，实现许可证、订阅、服务、保修等权益的建模、生命周期自动化管理、下游履约编排以及实时分析决策。
-   
-   
-
-
-
 
 
 ##  项目技术栈
@@ -10163,3 +9927,231 @@ RAG系统
 - Few-Shot Learning（少样本学习）
 
 - RAG（检索增强生成）
+
+
+
+这种实现简单、高效，适合 SAP Innovation Management 的富文本场景。如果需要更高级的（如 DOM-based），可迁移到 XS Advanced 的 Node.js 模块（）。如果有具体代码或项目细节，我可以进一步优化示例！
+
+------
+
+1. 主导/深度参与多租户核心框架落地（Schema-per-Tenant + 动态数据源 + Tenant Context 传递）
+2. 负责 XSUAA + JWT 全链路透传与授权体系设计（含 scope、attributes、自定义授权）
+3. 主导 SaaS Provisioning Service 订阅回调自动化开通流程，实现 5 分钟内新租户全栈可用
+4. 设计并落地基于 Outbox Pattern + RabbitMQ 可靠事件的分布式事务方案，保障核心链路最终一致性
+5. 主导从 Ribbon/Hystrix 向 Spring Cloud LoadBalancer + Resilience4j 的全系统治理升级
+6. 负责高频核心接口（Query V2 / Update V2）性能重构，RT 从秒级压到百毫秒级，支撑日千万调用
+7. 设计并实现 Destination + Connectivity Service 调用客户 S/4HANA 的安全直连方案
+8. 主导测试环境 DB Cleaner / Data Setup 微服务开发，支撑自动化回归零数据污染
+9. 从 0 到 1 搭建企业级 WDI5 + OPA5 UI 自动化平台，日均执行 800+ 用例，覆盖率 78%
+10. 基于 Spring AI + 内部大模型实现自然语言 → WDI5 可执行脚本一键生成，生成成功率 93%+
+11. 负责 Redis Cluster 分布式限流、分布式锁、热点缓存体系落地，峰值期数据库压力下降 70%
+12. 参与 RabbitMQ → Event Mesh（Kafka）平滑双写与流量切换，完成 60%+ 新流量迁移
+13. 负责 Dynatrace + OpenTelemetry + Cloud Logging 可观测性体系建设，实现毫秒级全链路追踪
+14. 主导 HANA Cloud Calculation View / CDS 重构，复杂分析查询性能提升 5~10 倍
+15. 设计租户级 Blue-Green 零停机发布流程，配合 CF Route + manifest.yml 实现分钟级切换
+16. 负责日常生产问题排查、性能瓶颈定位、应急响应（多次主导月末高峰期系统稳定）
+
+
+
+```
+spring:
+  ai:
+    vertex:
+      ai:
+        gemini:
+          project-id: your-gcp-project-id
+          location: us-central1
+          chat:
+            options:
+              model: gemini-2.0-flash-exp-03-25    # 2025 年企业最常用实验版 Flash
+              temperature: 0.2
+              top-p: 0.95
+              max-output-tokens: 2048
+              response-mime-type: application/json   # 强制 JSON 结构化输出
+```
+
+
+
+    @Service
+    @RequiredArgsConstructor
+    public class Wdi5ScriptGeneratorService {
+    private final ChatClient chatClient;  // Spring AI 自动注入，已绑定 Gemini
+    
+    private static final String SYSTEM_PROMPT = """
+        你是一个资深的 SAP UI5 WDI5 自动化脚本专家。
+        你必须严格按照以下格式输出可执行的 JavaScript 函数，不能多一句话，不能有 markdown 代码块。
+        必须使用标准的 executeStep(page, data, utils) 格式。
+        使用 utils.waitForUI5() 做全局等待，使用 utils.log() 打日志。
+        所有控件定位必须使用 WDI5 推荐的 controlType + properties 方式。
+        失败必须 throw new Error()。
+        输出必须是纯函数代码，可直接被 Function.parse() 执行。
+        """;
+    
+    public String generateScript(String naturalLanguage) {
+        String userPrompt = """
+            请生成 WDI5 脚本完成以下操作：
+            %s
+            
+            要求：
+            - 支持多租户子域名自动识别
+            - 所有输入框使用 SmartField 或 Input + binding
+            - 表格操作必须使用 getRows() + getCells()
+            - 最后必须有关闭 Dialog 或返回上一页的步骤
+            """.formatted(naturalLanguage);
+    
+        Prompt prompt = new Prompt(
+            List.of(
+                new SystemMessage(SYSTEM_PROMPT),
+                new UserMessage(userPrompt)
+            ),
+            GeminiChatOptions.builder()
+                .withTemperature(0.2)
+                .build()
+        );
+    
+        return chatClient.call(prompt)
+                .getResult()
+                .getOutput()
+                .getContent()
+                .trim();
+    }
+    }
+    {
+      "contents": [
+        {
+          "role": "model",
+          "parts": [{ "text": "你是一个资深的 SAP UI5 WDI5 自动化脚本专家...\n" }]
+        },
+        {
+          "role": "user",
+          "parts": [{ "text": "请生成 WDI5 脚本完成以下操作：\n在租户管理页面创建一个新租户，填入名称 'Test-Tenant-2025'，选择 Standard 版本，点击 Save 并验证成功弹窗出现。" }]
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.2,
+        "maxOutputTokens": 2048,
+        "responseMimeType": "application/json"
+      }
+    }
+HANA Calculation View + 动态字段投影 + Redis 二级缓存 + （例如产品配置信息、客户主数据、短期内频繁查询的活跃权益状态），引入 Redis 作为二级缓存。
+
+```json
+{
+    "tenantId": "alpha-test",
+    "connectionUrl": "jdbc:sap://xxx.hana.cloud:443",
+    "schema": "ALPHA",
+    "credentialsId": "cleaner-automation"
+}
+```
+
+
+
+1. **一级缓存（应用内缓存）：** 使用 Spring Boot 应用内存中的本地缓存（例如 Guava 或 Caffeine）来存储最近访问的流程配置。这是最快的访问方式。
+2. **二级缓存（Redis 分布式缓存）：** 使用 Redis 作为共享缓存。当不同的微服务实例需要访问配置时，它们可以从 Redis 中快速获取。
+3. **主动失效机制：** 当客户更新流程配置时，您的配置管理服务应主动通知相关的微服务或向 Redis 发送失效命令，以确保下一个请求能加载到最新规则。
+
+以下是一个适合「Java后端开发3年经验」岗位投递的**专业技能列表**（技术栈主流、全面、含深度，适合投大厂或中大厂），你可以直接抄或者根据实际情况微调：
+
+**专业技能**
+
+- 熟练使用 Java 核心技术，精通 Java 8+ 特性（Stream、Lambda、Optional、CompletableFuture、LocalDateTime 等）
+- 深入理解并长期使用 Spring 全家桶：
+  - Spring Boot（2.x/3.x）、Spring MVC、Spring Data JPA、Spring Security、Spring Cloud
+  - Spring Cloud Alibaba（Nacos、Sentinel、Seata、RocketMQ）
+- 熟练使用微服务架构，具备完整微服务项目从0到1开发经验
+- 熟练使用常见中间件：
+  - Redis（主从、哨兵、Cluster、分布式锁、Pipeline、Lua 脚本、缓存穿透/雪崩解决方案）
+  - MySQL（索引优化、分库分表、慢查询分析、事务隔离级别、MVCC）
+  - RabbitMQ / RocketMQ / Kafka（高性能消息队列、延迟队列、幂等消费、顺序消息、死信队列）
+  - Elasticsearch（倒排索引、DSL 查询、聚合分析、亿级数据检索优化）
+- 熟练使用 MyBatis / MyBatis-Plus，熟悉动态 SQL、插件机制、多数据源切换
+- 熟悉 JVM 调优（内存结构、GC 算法、常见 GC 调优参数、 Arthas、异步日志）
+- 熟悉常见设计模式及重构，具备大型系统设计与优化经验
+- 熟练使用 Docker + Kubernetes 完成容器化部署与服务编排
+- 熟练使用 Git、Maven/Gradle、Jenkins/GitLab CI 进行版本控制与持续集成
+- 熟悉 Linux 常见命令，具备问题排查与性能调优经验（top、free、vmstat、sar、strace、tcpdump）
+- 熟悉分布式系统常见问题与解决方案：
+  - 分布式锁、分布式事务（Seata AT/TCC/XA、RocketMQ 事务消息）
+  - 限流熔断降级（Sentinel、Resilience4j）
+  - 接口幂等、最终一致性、CAP 理论
+- 熟悉高并发场景优化（线程池调优、连接池调优、异步化、批量操作、热点缓存）
+- 了解常见 NoSQL（MongoDB、ClickHouse、TiDB）与 NewSQL 应用场景
+- 了解前后端分离开发，熟悉 RESTful API 设计规范与 OpenAPI/Swagger 文档生成
+- 具备良好的代码规范与代码审查能力，熟悉 SonarQube、阿里巴巴 Java 开发手册
+
+**加分项（有最好写上，没有也别硬写）**
+- 熟悉 Go/Python 等后端语言，有混合技术栈项目经验
+- 参与过亿级 PV/日活百万+项目的架构设计与优化
+- 有开源项目贡献或个人技术博客
+- 熟悉大数据生态（Flink、Spark、Hadoop）
+- 熟悉云原生技术（Istio Service Mesh、Serverless、GraalVM）
+
+
+
+参与构建一个运行在 SAP HANA 平台和HANA XS Engine之上的创新管理平台。该平台旨在标准化从创意提交到项目启动的全生命周期流程，利用 HANA 的内存计算能力提供高性能的实时分析和数据检索。
+
+1. 富文本跨站脚本攻击 (XSS) 防御机制
+   针对 SAP Innovation Management 平台中的富文本输入场景，设计并实施了健壮的数据输入清洗与验证机制。在 HANA XS Engine 应用服务层 (使用 Server-Side JavaScript - XSJS) 部署了白名单机制 (Whitelist Mechanism) 驱动的内容过滤引擎。该引擎通过严格的正则表达式匹配和编码，过滤掉用户输入中潜在的恶意 HTML 标签和 JavaScript 脚本，显著提升了系统的整体安全性与数据完整性。
+2. 负责Idea核心查询与状态流转接口的性能调优，利用 HANA Calculation Views 和 XSJS 精确调优idea相关查询，利用 SAP HANA DB 的内存计算和列式存储能力，优化了数据分析与检索性能。通过使用 SQLScript 编写高性能存储过程，并将复杂的聚合与数据处理逻辑封装在 Calculation Views 中，避免了应用服务器上的低效计算，在 XSJS 服务层使用预处理语句 (Prepared Statements) 执行重复的增删改查，使 HANA 能够高效缓存执行计划。
+
+
+
+1. 后端开发与逻辑实现：利用 HANA XS Engine 和 Server-Side JavaScript (XSJS) 开发和维护核心业务逻辑，包括创意提交、评估算法和权限管理模块。使用 SQLScript 编写存储过程和函数，优化数据库操作。
+2. 负责 SAP HANA 数据库的数据建模，设计高效的表结构和数据视图。
+3. 与前端团队协作，定义和实现 OData 服务接口，支持 Fiori UI 的数据交互需求。参与集成模块的设计，确保创新数据能通过 API 或 SAP CPI 无缝同步到下游项目管理系统。
+
+
+
+1. 负责可编程权益批量自动化引擎等重点模块的服务端研发工作。
+2. 对相关的软件和模块进行日常支持， Bug 修复， 发布维护等。
+3. 参与软件· 架构和设计的讨论，解决开发过程中遇到的各类技术难题，保证软件开发正常进行。
+4. 负责AI相关的research和集成开发；
+5. 从0到1主导WDI5 UI自动化测试平台落地，覆盖多租户Fiori复杂场景，搭建GitHub Actions+Jenkins双CI/CD流水线，实现每日一次全量回归与Allure报告自动分发；
+6. 及时响应处理线上故障。
+
+1. # SAP Innovation Management (SAP IM) 平台开发与实施
+
+   **项目名称：** 企业级创新管理平台 (SAP Innovation Management) 实施项目
+
+   参与构建一个运行在 SAP HANA 平台和HANA XS Engine之上的创新管理平台。该平台旨在标准化从创意提交到项目启动的全生命周期流程，利用 HANA 的内存计算能力提供高性能的实时分析和数据检索。
+
+   1. 富文本跨站脚本攻击 (XSS) 防御机制
+      针对 SAP Innovation Management 平台中的富文本输入场景，设计并实施了健壮的数据输入清洗与验证机制。在 HANA XS Engine 应用服务层 (使用 Server-Side JavaScript - XSJS) 部署了白名单机制 (Whitelist Mechanism) 驱动的内容过滤引擎。该引擎通过严格的正则表达式匹配和编码，过滤掉用户输入中潜在的恶意 HTML 标签和 JavaScript 脚本，显著提升了系统的整体安全性与数据完整性。
+   2. 负责Idea核心查询与状态流转接口的性能调优，利用 HANA Calculation Views 和 XSJS 精确调优idea相关查询，利用 SAP HANA DB 的内存计算和列式存储能力，优化了数据分析与检索性能。通过使用 SQLScript 编写高性能存储过程，并将复杂的聚合与数据处理逻辑封装在 Calculation Views 中，避免了应用服务器上的低效计算，在 XSJS 服务层使用预处理语句 (Prepared Statements) 执行重复的增删改查，使 HANA 能够高效缓存执行计划。
+
+   
+
+   
+
+   
+
+   为世界 500 强制造、能源、零售客户交付一套完全自研的企业级 SaaS 权益管理与智能决策平台，实现许可证、订阅、服务、保修等权益的建模、生命周期自动化管理、下游履约编排以及实时分析决策。核心服务统一部署于 SAP BTP Cloud Foundry 多地区环境，采用 Spring Boot 3 + Spring Cloud微服务架构，配合 Redis 分布式缓存 + RabbitMQ实现异步解耦、事件驱动与最终一致性，结合 SAP HANA Cloud 多租户支撑秒级高并发复杂分析查询，通过 Resilience4j 全套（熔断、重试、限流、舱壁）+ Redis 分布式令牌桶保障系统高可用，通过postman和WDI5构建起覆盖API和UI的E2E测试方案， Feature Toggle 机制实现了灰度发布、A/B 测试和生产环境的动态风险管控，基于 GitHub Actions + Jenkins + Docker + CF CLI 构建全链路 CI/CD 与 Dev/Stage/Prod 多环境自动化部署体系，配合 XSUAA + SaaS Provisioning + Destination/Connectivity Service 实现多租户自动化开通与客户 S/4HANA 安全直连。
+
+   1. 设计并实现客户可编程的权益批量自动化引擎（Entitlement Process），外部客户仅需一次 HTTP 调用即可驱动查询+批量更新权益；采用同步/异步双模式统一入口：1. 同步模式通过 OpenFeign 直连内部高性能微服务实时返回结果；2. 异步模式结合本地事务+Outbox 表可靠投递至 RabbitMQ，快速返回 202，后端独立process服务消费执行,基于内存的临时状态判断机制确保单次数据库提交内的规则逻辑一致性与高效处理，核心写阶段使用 HANA 全局临时表+单语句原子MERGE + 行级排他锁 + 内置乐观锁实现全量原子提交。
+   2. 核心查询接口 QueryV2 的重构调优工作，在解决随数据量增长带来的性能瓶颈，确保系统支持百万级权益的秒级并发查询。架构优化与代码下推：采用 SQLScript 驱动的动态查询引擎，将复杂查询逻辑从 Spring Boot 应用服务下推至 SAP HANA Cloud (列存) 架构。该引擎采用 APPLY_FILTER 优化动态 WHERE 筛选，并使用 EXECUTE IMMEDIATE 实现 SELECT 字段的运行时投影裁剪，同时集成 分页 能力。通过构建优化的 Calculation Views，利用 HANA 内存计算能力实现并行计算，并使用 Resilience4j（限流、熔断）策略保障接口稳定性。
+   3. 开发测试环境 DB Cleaner 微服务，提供 HTTP API，一键清空与重建环境，动态解析 HANA SYS.REFERENTIAL_CONSTRAINTS 外键依赖，计算拓扑排序并自动依序执行 TRUNCATE / 分区级删除，清理效率提升；同时基于事务包裹 Init SQL Script，失败自动回滚，保证 “要么全部成功，要么不改动”，Redis 分布式锁防止并发冲突；
+   4. 基于Spring AI 的LLM-Driven Script Generator），设计并实现“自然语言需求 → 可执行JS脚本”一键生成功能，结合 Prompt Engineering 调用内部Gemini模型；生成脚本统一封装为标准格式，与现有框架无缝集成内置代码格式化、失败自动重试机制，生成成功率稳定 95%+。
+   5. 基于RAG的postman脚本生成工具，将Markdown E2E测试用例自动转换为Postman Collection JSON，基于FAISS向量数据库和嵌入模型，实现语义模板匹配，集成 LangChain + LLM，实现Markdown解析、模板管理与分块生成。
+   
+   **基于WDI5的UI 自动化测试平台**架构设计、实现和CI/CD流程设计：
+   
+   1. 通过WDI5实现与UI5应用交互，结合Chai强大、灵活的断言能力，完美覆盖 Fiori Launchpad + 多租户子域名路由 + SAPUI5 复杂场景；
+   2. “数据层与业务场景完全解耦” 设计：通过 axios 封装独立 DataClient 模块，统一负责所有数据的 创建 / 修改 / 删除 / 查询操作，测试场景仅负责编排流程，彻底实现 “一份数据脚本，多场景复用”；
+   3. 封装 axios 实例级拦截器，自动处理 XSUAA JWT 刷新 + csrf-token 动态获取 + 多租户 subdomain 切换 + 请求重试，结合 csv-parse / xlsx / papa-parse 实现 Excel/CSV 批量驱动测试；
+   4. 构建GitHub Actions + Jenkins Pipeline 双 CI 引擎自动化流水线，GitHub Actions 实现 PR 检查，Jenkins 每日两次全量回归；集成 Allure到平台中，生成报告，并且自动推送到团队邮箱。
+   
+   
+   
+   1. 负责可编程权益批量自动化引擎等重点模块的服务端研发工作。
+   2. 对相关的软件和模块进行日常支持， Bug 修复， 发布维护等。
+   3. 参与软件· 架构和设计的讨论，解决开发过程中遇到的各类技术难题，保证软件开发正常进行。
+   4. 从0到1主导WDI5 UI自动化测试平台落地，覆盖多租户Fiori复杂场景，搭建GitHub Actions+Jenkins双CI/CD流水线，实现每日一次全量回归与Allure报告自动分发；
+   5. 及时响应处理线上故障。
+   
+   我是23年6月电子科技大学软件工程专业本科毕业，其中在大三下学期开始在思爱普成都研究院Innovation Management项目组实习，这个项目是提供标准化的从创意提交到项目启动的全生命周期流程，参与日常开发和一些support工作，会处理线上故障，一个运行在 SAP HANA 平台和HANA XS Engine之上的创新管理项目，毕业之后转到entitlement management system的项目组，项目是一套自研的SaaS 权益管理与智能决策平台，实现许可证、订阅、服务、保修等权益的建模、生命周期自动化管理、下游履约编排以及实时分析决策。
+   
+   
+
+
+
+- 
